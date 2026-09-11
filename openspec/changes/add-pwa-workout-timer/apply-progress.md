@@ -164,3 +164,64 @@ U3–U13 all unchecked (62 tasks). Next unit: **U3 — Timer core I: types + pla
 ### Structured status consumed
 
 - `applyState: ready` (9/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace]`, no warnings. Attempt token authority: u2-1789115404-27053 (never written to any repo file).
+
+---
+
+## U3 — Timer core I: types + plan compiler (PR 3)
+
+**Branch**: `u3-timer-plan` (from `main` @ 8124873). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u3-1789125840-3888 (never written to any repo file).
+
+### Completed tasks (tasks.md checkboxes updated 5/5 U3 → `- [x]`)
+
+RED (1), GREEN (1), TRIANGULATE (2), REFACTOR (1) — all U3 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED | `src/lib/timer/plan.test.ts` | `Failed to resolve import "./plan"` — Test Files 1 failed (1) | 3/3 pass (Clásico 2 rondas exact 4-phase array 85 s; contiguous indices; 1 ronda → no descanso) |
+| GREEN | `types.ts` + `plan.ts` (Clásico) | (same run) | same run |
+| TRIANGULATE-1 | `plan.test.ts` (+7 tests) | 7 failed with `compilePlan: modo no soportado aún: tabata/personalizado` (genuine branch-missing RED; Clásico 3 stayed green) | 10/10 pass (Tabata 170 s exact; largo replaces/never stacks; 1 tabata sin largo; Personalizado mixed 115 s; no global rest after final block; no stacking at boundary; block independence; multi-tabata block with own largo — 225 s) |
+| TRIANGULATE-2 | `configSchemas.test.ts` | `Failed to resolve import "./configSchemas"` — Test Files 1 failed | 21/21 pass (0/negative/non-numeric/non-integer × Clásico+Tabata; Spanish messages; bounds 3600 s / 50; missing field; blocks min 1; descanso global same rules; nested block issue path; discriminated union ×3 modes + unknown mode) |
+| REFACTOR | `src/lib/timer/purity.test.ts` (approval-style guard, written first and passing) + helper extraction | — | 37/37 across the three U3 files; full suite 97/97 |
+
+Safety net: full `pnpm test` baseline before any edit → 60/60 passing (5 files). No pre-existing failures.
+
+Final verification on the branch: `pnpm test` → **Test Files 8 passed (8), Tests 97 passed (97)** · `pnpm lint` clean · `pnpm exec tsc --noEmit` exit 0.
+
+### Files changed
+
+- `src/lib/timer/types.ts` — design §3.1 verbatim: as-const `PHASE_KIND`/`MODE`/`SESSION_STATUS`, flat interfaces (`ClasicoValues`, `TabataValues`, `BlockDef`, config union, `ScheduledPhase`, `PhasePlan`), plus the trivial engine-side interfaces (`SessionState`, `SessionView`, `Clock`) — no logic, U4 owns `engine.ts`/`clock.ts` behaviors.
+- `src/lib/timer/plan.ts` — pure `compilePlan(config): PhasePlan` per §3.2: seed builders per mode (`clasicoSeeds`, `tabataSeeds`, `personalizadoSeeds`) + `withOffsets` (contiguous indices, cumulative ACTIVE-time offsets) + shared `interleaveWorkRest` alternation primitive (rest only between consecutive work units, never trailing).
+- `src/lib/validation/configSchemas.ts` — zod 4 schemas with Spanish messages: `clasicoValuesSchema` (4 fields), `tabataValuesSchema` (6 spec fields; inherited `rondas` optional-vestigial), `blockSchema` (discriminated on `tipo`), `personalizadoValuesSchema` (`descansoGlobalS` + `blocks` min 1), config wrappers + `sessionConfigSchema` (discriminated on `mode`), inferred form types for U5/U6. **Documented bounds**: durations 1..3600 s (`MAX_PHASE_SECONDS`), counts 1..50 (`MAX_COUNT`).
+- Tests: `plan.test.ts` (10), `configSchemas.test.ts` (21), `purity.test.ts` (6).
+
+### Label scheme (design §3.2 "labels carry context")
+
+| Context | Labels |
+| --- | --- |
+| Clásico mode | "Preparación" · "Trabajo" · "Descanso" |
+| Tabata mode | "Preparación" · "Tabata N · Trabajo" · "Descanso" · "Descanso largo" |
+| Personalizado block N | "Bloque N · Preparación" · "Bloque N · Trabajo" · "Bloque N · Descanso" · "Bloque N · Tabata M · Trabajo" · "Bloque N · Descanso largo" · "Descanso global" (between blocks, unprefixed) |
+
+All seven design example strings are produced and asserted exactly ("Tabata 2 · Trabajo" in Tabata mode, "Bloque 2 · Trabajo" in Personalizado).
+
+### Deviations / decisions
+
+- **`TabataValues.rondas` is vestigial** (design §3.1 mandates `extends ClasicoValues`; the Tabata spec defines six values): plan compilation uses `rondasPorTabata` exclusively; `tabataValuesSchema` validates the six spec fields and accepts `rondas` as optional passthrough. U5 note: when constructing a `TabataConfig` typed as `TabataValues`, supply `rondas: rondasPorTabata` or a documented cast.
+- **Engine-side interfaces landed in U3** (`SessionState`/`SessionView`/`Clock` in `types.ts`): trivial no-logic declarations, part of §3.1; U4 remains the owner of `engine.ts`/`clock.ts` behavior.
+- **Purity guard is a source-scan test** (`purity.test.ts`, disk-read like U2's `globals.test.ts`): asserts no React/framework imports and no `window`/`document`/`navigator` tokens in `types.ts`, `plan.ts`, `configSchemas.ts` — enforces the framework-free contract structurally.
+- Fixture typing: `as const` made `blocks` readonly (incompatible with `BlockDef[]`); fixtures are explicitly typed as `TabataConfig`/`PersonalizadoConfig` instead.
+
+### Remaining tasks
+
+U4–U13 all unchecked (57 tasks). Next unit: **U4 — Timer core II: engine + clock (HARD GATE core) — PR 4** (first unchecked: `- [ ] RED: src/lib/timer/engine.test.ts`).
+
+### Workload / PR boundary
+
+- PR 3 = U3 only, branch `u3-timer-plan` → `main` (stacked-to-main chain, user-confirmed; no push/PR by this executor — orchestrator owns it).
+- Authored lines = 945 (implementation 406: types 118 + plan 174 + configSchemas 114; tests 539: plan.test 290 + configSchemas.test 202 + purity 47). Above the ~300 estimate and the 400-line authored budget; auto-chain delivery path is already user-confirmed and the per-unit forecast for U3 was "Low risk". Tests dominate the diff (63%) and are spec-scenario assertions mandated by strict TDD; no honest way to shrink further without dropping spec coverage. Reported for the orchestrator's size check — `size:exception` available if the reviewer wants the unit split, though slicing the plan compiler from its schema tests would separate colocated verification.
+
+### Structured status consumed
+
+- `applyState: ready` (15/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace]`, no warnings. Attempt token authority: u3-1789125840-3888 (never written to any repo file).
