@@ -119,10 +119,10 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: `src/app/personalizado/page.tsx`, `src/components/builder/PersonalizadoBuilder.tsx`, `BlockCard.tsx`, `BlockList.tsx`, `AddBlockMenu.tsx`, `ReorderControls.tsx`.
 **Acceptance hooks**: timer-modes — builder scenarios: "Mixed sequence runs block by block" (UI→plan), "Block values are independent", "Reordering changes execution order", "Empty sequence is rejected"; completes "All modes reachable".
 
-- [ ] RED: `src/components/builder/PersonalizadoBuilder.test.tsx` — starting with zero blocks shows a visible Spanish error and no session starts. <!-- sdd-owner: implementation -->
-- [ ] GREEN: builder state and UI — add a Clásico or Tabata block, remove a block, reorder (move up/down); each block's values are independent form state (two blocks with different trabajo values stay independent). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: reordering changes the compiled execution order (assert against `compilePlan` output at submit); descanso global field validates like all durations; "Iniciar" submits the full `PersonalizadoConfig` to `sessionStore.start` and navigates `/sesion`; route shell `src/app/personalizado/page.tsx` renders. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: reuse U5 field components inside `BlockCard`; keep builder components composable. <!-- sdd-owner: implementation -->
+- [x] RED: `src/components/builder/PersonalizadoBuilder.test.tsx` — starting with zero blocks shows a visible Spanish error and no session starts. <!-- sdd-owner: implementation -->
+- [x] GREEN: builder state and UI — add a Clásico or Tabata block, remove a block, reorder (move up/down); each block's values are independent form state (two blocks with different trabajo values stay independent). <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: reordering changes the compiled execution order (assert against `compilePlan` output at submit); descanso global field validates like all durations; "Iniciar" submits the full `PersonalizadoConfig` to `sessionStore.start` and navigates `/sesion`; route shell `src/app/personalizado/page.tsx` renders. <!-- sdd-owner: implementation -->
+- [x] REFACTOR: reuse U5 field components inside `BlockCard`; keep builder components composable. <!-- sdd-owner: implementation -->
 
 ## U7 — Session store + active screen + controller — PR 7
 
