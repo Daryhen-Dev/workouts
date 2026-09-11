@@ -86,11 +86,11 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: `src/lib/timer/types.ts`, `src/lib/timer/plan.ts`, `src/lib/validation/configSchemas.ts`. Pure — no React, no browser APIs.
 **Acceptance hooks**: timer-modes — "Two-round sequence", "Single-round session has no rest phase", "Two tabatas with long rest", "Long rest replaces short rest", "Mixed sequence runs block by block", "Block values are independent", "No rest stacking at block boundaries", "No global rest after the final block" (plan-level reorder and empty-sequence schema rejection included).
 
-- [ ] RED: `src/lib/timer/plan.test.ts` — Clásico (10/30/15, 2 rondas) produces the exact phase kind/duration/offset array totaling 85 s; 1 ronda produces no descanso at all. <!-- sdd-owner: implementation -->
-- [ ] GREEN: `src/lib/timer/types.ts` exactly per design §3.1 (as-const `PHASE_KIND`/`MODE`/`SESSION_STATUS`, flat interfaces, `Clock`) + `src/lib/timer/plan.ts` `compilePlan` for Clásico. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: Tabata (10/20/10/2 rondas/2 tabatas/60 largo) → exact 170 s sequence; descanso largo replaces (never stacks on) short rest; Personalizado mixed blocks with descanso global between consecutive blocks only, never after the final block, no block-internal trailing rest; block value independence; contextual labels ("Tabata 2 · Trabajo", "Bloque 2 · Trabajo", "Descanso largo", "Descanso global"). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: `src/lib/validation/configSchemas.ts` (zod, Spanish messages) — rejects zero, negative, non-numeric, and non-integer durations/counts; Personalizado requires at least one block and validates descanso global under the same rules. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: shared block-flattening helpers; module stays pure and framework-free. <!-- sdd-owner: implementation -->
+- [x] RED: `src/lib/timer/plan.test.ts` — Clásico (10/30/15, 2 rondas) produces the exact phase kind/duration/offset array totaling 85 s; 1 ronda produces no descanso at all. <!-- sdd-owner: implementation -->
+- [x] GREEN: `src/lib/timer/types.ts` exactly per design §3.1 (as-const `PHASE_KIND`/`MODE`/`SESSION_STATUS`, flat interfaces, `Clock`) + `src/lib/timer/plan.ts` `compilePlan` for Clásico. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: Tabata (10/20/10/2 rondas/2 tabatas/60 largo) → exact 170 s sequence; descanso largo replaces (never stacks on) short rest; Personalizado mixed blocks with descanso global between consecutive blocks only, never after the final block, no block-internal trailing rest; block value independence; contextual labels ("Tabata 2 · Trabajo", "Bloque 2 · Trabajo", "Descanso largo", "Descanso global"). <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: `src/lib/validation/configSchemas.ts` (zod, Spanish messages) — rejects zero, negative, non-numeric, and non-integer durations/counts; Personalizado requires at least one block and validates descanso global under the same rules. <!-- sdd-owner: implementation -->
+- [x] REFACTOR: shared block-flattening helpers; module stays pure and framework-free. <!-- sdd-owner: implementation -->
 
 ## U4 — Timer core II: engine + clock (HARD GATE core) — PR 4
 
