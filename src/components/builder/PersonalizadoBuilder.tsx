@@ -15,10 +15,12 @@
 // construcción del compilador.
 
 import { Path, useForm } from "react-hook-form";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { CONFIG_COPY } from "@/components/shared/copy";
+import { CONFIG_COPY, ROUTINES_COPY } from "@/components/shared/copy";
+import { SaveRoutineDialog } from "@/components/routines/SaveRoutineDialog";
 import { compilePlan } from "@/lib/timer/plan";
 import { formatDurationMs, totalPlanMs } from "@/lib/timer/duration";
 import {
@@ -150,6 +152,12 @@ export function PersonalizadoBuilder() {
     defaultValues: DEFAULT_VALUES,
   });
 
+  const [guardando, setGuardando] = useState(false);
+
+  // Config ACTUAL para «Guardar rutina» (U9), evaluada al confirmar: la misma
+  // toPersonalizadoConfig del envío (null si el constructor está inválido).
+  const getConfig = () => toPersonalizadoConfig(getValues());
+
   const values = watch();
   // Cast documentado (patrón U3): los valores del formulario son
   // estructuralmente BlockDefs — solo el `rondas` vestigial de Tabata es
@@ -271,6 +279,21 @@ export function PersonalizadoBuilder() {
       <Button type="submit" size="lg" className="w-full">
         {CONFIG_COPY.iniciar}
       </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => setGuardando(true)}
+      >
+        {ROUTINES_COPY.guardarRutina}
+      </Button>
+
+      <SaveRoutineDialog
+        open={guardando}
+        getConfig={getConfig}
+        onClose={() => setGuardando(false)}
+      />
     </form>
   );
 }

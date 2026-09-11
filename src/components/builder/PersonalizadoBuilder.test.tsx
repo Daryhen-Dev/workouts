@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 import { PersonalizadoBuilder } from "./PersonalizadoBuilder";
 import PersonalizadoPage from "@/app/personalizado/page";
 import { compilePlan } from "@/lib/timer/plan";
+import { ROUTINES_STORAGE_KEY, useRoutinesStore } from "@/stores/routinesStore";
 
 /** Raíz de la tarjeta del bloque (article) localizada por su encabezado. */
 function card(titulo: string): HTMLElement {
@@ -55,6 +56,8 @@ function iniciar() {
 beforeEach(() => {
   mocks.start.mockClear();
   mocks.push.mockClear();
+  window.localStorage.removeItem(ROUTINES_STORAGE_KEY);
+  useRoutinesStore.setState({ routines: [] });
 });
 
 describe("PersonalizadoBuilder — secuencia vacía (spec «Empty sequence is rejected»)", () => {
@@ -295,5 +298,45 @@ describe("PersonalizadoBuilder — shell de la ruta", () => {
       screen.getByRole("button", { name: "Añadir bloque Clásico" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Descanso global")).toBeInTheDocument();
+  });
+});
+
+describe("PersonalizadoBuilder — Guardar rutina (spec routines, U9)", () => {
+  it("guarda la secuencia completa; el plan conserva el descanso global", async () => {
+    render(<PersonalizadoBuilder />);
+    addBlock("Tabata");
+    setBlockField("Bloque 1 · Tabata", "Tabatas", "1");
+    addBlock("Clásico");
+    setBlockField("Bloque 2 · Clásico", "Rondas", "1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar rutina" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Nombre de la rutina"), {
+      target: { value: "Mixta" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    const [record] = useRoutinesStore.getState().routines;
+    expect(record.name).toBe("Mixta");
+    expect(record.mode).toBe("personalizado");
+    if (record.config.mode !== "personalizado") {
+      throw new Error("fixture: no es Personalizado");
+    }
+    expect(record.config.descansoGlobalS).toBe(20);
+    expect(record.config.blocks.map((b) => b.tipo)).toEqual([
+      "tabata",
+      "clasico",
+    ]);
+
+    // Fidelidad de secuencia (spec: keeps the full sequence): el descanso
+    // global de 20 s está ENTRE los bloques, no tras el final.
+    const globals = compilePlan(record.config).filter(
+      (fase) => fase.kind === "descansoGlobal",
+    );
+    expect(globals).toHaveLength(1);
+    expect(globals[0].durationMs).toBe(20_000);
   });
 });

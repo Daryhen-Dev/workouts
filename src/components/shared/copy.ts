@@ -52,6 +52,8 @@ export const HOME_COPY = {
   tabata: "Rondas por tabata con descanso largo entre tabatas.",
   personalizado: "Encadena bloques clásicos y tabata a tu medida.",
  },
+ /** Slot de rutinas rápidas (U9): lista de rutinas guardadas. */
+ rutinasTitulo: "Rutinas guardadas",
 } as const;
 
 // ——— Copy del constructor Personalizado (U6) ———
@@ -119,4 +121,44 @@ export const HISTORY_COPY = {
  duracionMedia: "Duración media",
  vacio: "Todavía no hay sesiones completadas.",
  sinResultados: "No hay sesiones con estos filtros.",
+} as const;
+
+// ——— Copy de rutinas (U9: /rutinas, diálogos de guardar/renombrar/eliminar) ———
+
+export const ROUTINES_COPY = {
+ titulo: "Rutinas",
+ descripcion: "Tus configuraciones guardadas, listas para arrancar.",
+ vacio: "Todavía no has guardado ninguna rutina.",
+ iniciar: "Iniciar",
+ renombrar: "Renombrar",
+ eliminar: "Eliminar",
+ guardarRutina: "Guardar rutina",
+ nombreCampo: "Nombre de la rutina",
+ cancelar: "Cancelar",
+ guardar: {
+  titulo: "Guardar rutina",
+  descripcion: "Ponle un nombre a esta configuración para reutilizarla.",
+  confirmar: "Guardar",
+ },
+ renombrarDialogo: {
+  titulo: "Renombrar rutina",
+  descripcion: "El nombre no puede quedar vacío.",
+ },
+ eliminarDialogo: {
+  titulo: "¿Eliminar la rutina?",
+  descripcion:
+   "Esta rutina se quitará de tu lista. Tus otras rutinas y el historial no se tocan.",
+ },
+ sobrescribir: {
+  titulo: "¿Sobrescribir rutina?",
+  descripcion:
+   "Ya existe una rutina con ese nombre. Sobrescribirla reemplazará su configuración.",
+  confirmar: "Sobrescribir",
+ },
+ errores: {
+  nombreVacio: "El nombre de la rutina no puede estar vacío",
+  nombreDuplicado: "Ya existe una rutina con ese nombre",
+  configInvalida:
+   "Revisa los valores de la configuración antes de guardar la rutina",
+ },
 } as const;

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mismo seam que Clásico: el mock de `sessionStore.start` codifica el contrato
@@ -12,6 +18,7 @@ vi.mock("@/stores/sessionStore", () => ({ start: mocks.start }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 import { TabataConfigScreen } from "./TabataConfigScreen";
+import { ROUTINES_STORAGE_KEY, useRoutinesStore } from "@/stores/routinesStore";
 
 function setField(label: string, value: string) {
   fireEvent.change(screen.getByLabelText(label), {
@@ -26,6 +33,8 @@ function iniciar() {
 beforeEach(() => {
   mocks.start.mockClear();
   mocks.push.mockClear();
+  window.localStorage.removeItem(ROUTINES_STORAGE_KEY);
+  useRoutinesStore.setState({ routines: [] });
 });
 
 describe("TabataConfigScreen — los seis campos validan igual que Clásico (spec timer-modes)", () => {
@@ -115,5 +124,38 @@ describe("TabataConfigScreen — resumen de duración total (compilePlan)", () =
     render(<TabataConfigScreen />);
     setField("Tabatas", "1");
     expect(screen.getByTestId("total-sesion")).toHaveTextContent("1:00");
+  });
+});
+
+describe("TabataConfigScreen — Guardar rutina (spec routines, U9)", () => {
+  it("guarda la config actual con el `rondas` vestigial fijado", async () => {
+    render(<TabataConfigScreen />);
+    setField("Trabajo", "22");
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar rutina" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Nombre de la rutina"), {
+      target: { value: "Sprint" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    const [record] = useRoutinesStore.getState().routines;
+    expect(record.name).toBe("Sprint");
+    expect(record.mode).toBe("tabata");
+    expect(record.config).toEqual({
+      mode: "tabata",
+      values: {
+        preparacionS: 10,
+        trabajoS: 22,
+        descansoS: 10,
+        rondasPorTabata: 2,
+        tabatas: 2,
+        descansoLargoS: 60,
+        rondas: 2, // vestigial (flag U3): fijado como al iniciar
+      },
+    });
   });
 });
