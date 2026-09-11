@@ -92,7 +92,10 @@ describe("planPhaseCues — convención de los últimos 3 segundos (spec audio)"
     const plan = compilePlan(CLASICO_85);
     for (const ph of plan) {
       const cues = planPhaseCues(ph);
-      expect(cues.length, `fase ${ph.index} (${ph.label})`).toBeGreaterThanOrEqual(2);
+      expect(
+        cues.length,
+        `fase ${ph.index} (${ph.label})`,
+      ).toBeGreaterThanOrEqual(2);
       expect(cues.at(-1)).toEqual({
         atActiveMs: ph.startOffsetMs + ph.durationMs,
         kind: CUE_KIND.transition,
@@ -111,14 +114,18 @@ describe("planPhaseCues — convención de los últimos 3 segundos (spec audio)"
 
 describe("duckEventsFor — eventos de ducking que enmarcan cada cue (base U11)", () => {
   it("un cue de countdown se enmarca con duckDown antes y rampBack después", () => {
-    const [events] = duckEventsFor([{ atActiveMs: 4_000, kind: CUE_KIND.countdown }]);
+    const [events] = duckEventsFor([
+      { atActiveMs: 4_000, kind: CUE_KIND.countdown },
+    ]);
 
     expect(events).toEqual({
       kind: DUCK_EVENT_KIND.duckDown,
       atActiveMs: 4_000 - BEEP.duckPadMs,
       toValue: BEEP.duckLevel,
     });
-    const [, ramp] = duckEventsFor([{ atActiveMs: 4_000, kind: CUE_KIND.countdown }]);
+    const [, ramp] = duckEventsFor([
+      { atActiveMs: 4_000, kind: CUE_KIND.countdown },
+    ]);
     expect(ramp).toEqual({
       kind: DUCK_EVENT_KIND.rampBack,
       // ventana del cue countdown = 1 blip; ramp tras la ventana + pad
@@ -128,8 +135,7 @@ describe("duckEventsFor — eventos de ducking que enmarcan cada cue (base U11)"
   });
 
   it("la ventana del cue de transición cubre el doble blip completo (más largo que el countdown)", () => {
-    const transitionWindowMs =
-      2 * BEEP.blipDurationMs + BEEP.transitionGapMs;
+    const transitionWindowMs = 2 * BEEP.blipDurationMs + BEEP.transitionGapMs;
     const [, ramp] = duckEventsFor([
       { atActiveMs: 6_000, kind: CUE_KIND.transition },
     ]);

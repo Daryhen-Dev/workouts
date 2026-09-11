@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stubAudioContext, type StubAudioContext } from "@/test/fakes";
 
 // El contexto activo lo decide cada test (null = sin Web Audio).
-const audioHolder = vi.hoisted(() => ({ ctx: null as StubAudioContext | null }));
+const audioHolder = vi.hoisted(() => ({
+  ctx: null as StubAudioContext | null,
+}));
 vi.mock("@/lib/audio/context", () => ({
   getAudioContext: () => audioHolder.ctx,
   resumeIfSuspended: vi.fn(async () => {}),
@@ -51,7 +53,13 @@ describe("schedulePhaseCues — conversión ancla activo-ms → reloj del contex
       BEEP.transitionFrequencyHz,
     ]);
     // ancla: base 100 s ↔ elapsed 0 ms → cue activo 3000 ms ⇒ ctx 103 s; etc.
-    expect(blips.map((b) => b.startedAt)).toEqual([103, 104, 105, 106, 106 + TRANSITION_GAP_S]);
+    expect(blips.map((b) => b.startedAt)).toEqual([
+      103,
+      104,
+      105,
+      106,
+      106 + TRANSITION_GAP_S,
+    ]);
   });
 
   it("anchor intermedio: elapsed 3500 ms re-ancla la conversión (no desde 0)", () => {
@@ -60,7 +68,10 @@ describe("schedulePhaseCues — conversión ancla activo-ms → reloj del contex
 
     const blips = audioHolder.ctx!.blips();
     expect(blips.map((b) => b.startedAt)).toEqual([
-      100.5, 101.5, 102.5, 102.5 + TRANSITION_GAP_S,
+      100.5,
+      101.5,
+      102.5,
+      102.5 + TRANSITION_GAP_S,
     ]);
   });
 
@@ -74,7 +85,11 @@ describe("schedulePhaseCues — conversión ancla activo-ms → reloj del contex
       BEEP.transitionFrequencyHz,
       BEEP.transitionFrequencyHz,
     ]);
-    expect(blips.map((b) => b.startedAt)).toEqual([101, 102, 102 + TRANSITION_GAP_S]);
+    expect(blips.map((b) => b.startedAt)).toEqual([
+      101,
+      102,
+      102 + TRANSITION_GAP_S,
+    ]);
   });
 
   it("un cue EXACTAMENTE en el ahora se descarta (no hay ventana para programarlo)", () => {
@@ -82,7 +97,10 @@ describe("schedulePhaseCues — conversión ancla activo-ms → reloj del contex
 
     const blips = audioHolder.ctx!.blips();
     expect(blips.map((b) => b.startedAt)).toEqual([
-      101, 102, 103, 103 + TRANSITION_GAP_S,
+      101,
+      102,
+      103,
+      103 + TRANSITION_GAP_S,
     ]);
   });
 
@@ -90,7 +108,9 @@ describe("schedulePhaseCues — conversión ancla activo-ms → reloj del contex
     schedulePhaseCues(PHASE_5S, 0);
 
     const blips = audioHolder.ctx!.blips();
-    const transition = blips.filter((b) => b.frequencyHz === BEEP.transitionFrequencyHz);
+    const transition = blips.filter(
+      (b) => b.frequencyHz === BEEP.transitionFrequencyHz,
+    );
     expect(transition).toHaveLength(2);
     expect(transition[1].startedAt - transition[0].startedAt).toBeCloseTo(
       TRANSITION_GAP_S,
@@ -150,7 +170,11 @@ describe("cancelScheduledCues — pausa: no se deben beeps mientras pausada (§6
     expect(blips).toHaveLength(10); // 5 cancelados + 5 re-programados
     // base 101 s ↔ elapsed 1000 ms: cue 3000 → 103, …, transición 6000 → 106.
     expect(blips.slice(5).map((b) => b.startedAt)).toEqual([
-      103, 104, 105, 106, 106 + TRANSITION_GAP_S,
+      103,
+      104,
+      105,
+      106,
+      106 + TRANSITION_GAP_S,
     ]);
     // Los re-programados no están cancelados.
     for (const blip of blips.slice(5)) expect(blip.canceled).toBe(false);

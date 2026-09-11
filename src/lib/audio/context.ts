@@ -23,11 +23,11 @@ let singleton: AudioContext | null = null;
  * la misma instancia. Sin Web Audio en el entorno → null (no-op universal).
  */
 export function getAudioContext(): AudioContext | null {
-  if (typeof AudioContext === "undefined") return null;
-  if (singleton === null) {
-    singleton = new AudioContext();
-  }
-  return singleton;
+ if (typeof AudioContext === "undefined") return null;
+ if (singleton === null) {
+  singleton = new AudioContext();
+ }
+ return singleton;
 }
 
 /**
@@ -35,11 +35,11 @@ export function getAudioContext(): AudioContext | null {
  * Best-effort: errores de resume se tragan — la sesión NO depende del audio.
  */
 export async function resumeIfSuspended(): Promise<void> {
-  const ctx = getAudioContext();
-  if (ctx === null || ctx.state !== "suspended") return;
-  try {
-    await ctx.resume();
-  } catch {
-    // best-effort (§6.1): la recuperación fallida jamás rompe la sesión
-  }
+ const ctx = getAudioContext();
+ if (ctx === null || ctx.state !== "suspended") return;
+ try {
+  await ctx.resume();
+ } catch {
+  // best-effort (§6.1): la recuperación fallida jamás rompe la sesión
+ }
 }

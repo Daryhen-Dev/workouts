@@ -39,7 +39,11 @@ interface PendingBlip {
 const pending: PendingBlip[] = [];
 
 /** Programa UN blip (osc → gain → destino) con envolvente en tiempo exacto del contexto. */
-function scheduleBlip(ctx: AudioContext, atCtxTime: number, frequencyHz: number): void {
+function scheduleBlip(
+  ctx: AudioContext,
+  atCtxTime: number,
+  frequencyHz: number,
+): void {
   const osc = ctx.createOscillator();
   osc.type = "sine";
   osc.frequency.value = frequencyHz;
@@ -85,9 +89,14 @@ export function schedulePhaseCues(
 
     if (cue.kind === CUE_KIND.transition) {
       // Transición DISTINTA (spec): otra frecuencia + doble blip.
-      const secondBlipOffset = (BEEP.blipDurationMs + BEEP.transitionGapMs) / 1000;
+      const secondBlipOffset =
+        (BEEP.blipDurationMs + BEEP.transitionGapMs) / 1000;
       scheduleBlip(ctx, cueCtxTime, BEEP.transitionFrequencyHz);
-      scheduleBlip(ctx, cueCtxTime + secondBlipOffset, BEEP.transitionFrequencyHz);
+      scheduleBlip(
+        ctx,
+        cueCtxTime + secondBlipOffset,
+        BEEP.transitionFrequencyHz,
+      );
     } else {
       scheduleBlip(ctx, cueCtxTime, BEEP.countdownFrequencyHz);
     }

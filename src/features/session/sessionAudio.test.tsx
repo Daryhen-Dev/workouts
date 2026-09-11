@@ -100,9 +100,7 @@ describe("cableado de cues — disparadores §6.3 a través del orquestador", ()
     mountRunning(createFakeClock(0));
 
     // prep 10 s: countdown a 7/8/9 s + transición en 10 s (doble blip).
-    expect(blipStarts()).toEqual([
-      107, 108, 109, 110, 110 + TRANSITION_GAP_S,
-    ]);
+    expect(blipStarts()).toEqual([107, 108, 109, 110, 110 + TRANSITION_GAP_S]);
     const freqs = audioHolder.ctx!.blips().map((b) => b.frequencyHz);
     expect(freqs).toEqual([
       BEEP.countdownFrequencyHz,
@@ -148,7 +146,11 @@ describe("cableado de cues — disparadores §6.3 a través del orquestador", ()
     // elapsed sigue en 4000 ms: cues 7/8/9/10 desde base 130 → 133/134/135/136.
     const blips = audioHolder.ctx!.blips();
     expect(blips.slice(5).map((b) => b.startedAt)).toEqual([
-      133, 134, 135, 136, 136 + TRANSITION_GAP_S,
+      133,
+      134,
+      135,
+      136,
+      136 + TRANSITION_GAP_S,
     ]);
     // los de antes de la pausa quedaron cancelados; los nuevos no.
     for (const blip of blips.slice(0, 5)) expect(blip.canceled).toBe(true);
@@ -168,7 +170,11 @@ describe("cableado de cues — disparadores §6.3 a través del orquestador", ()
     // → deltas 26.5/27.5/28.5/29.5 s desde base 100.
     const blips = audioHolder.ctx!.blips();
     expect(blips.slice(5).map((b) => b.startedAt)).toEqual([
-      126.5, 127.5, 128.5, 129.5, 129.5 + TRANSITION_GAP_S,
+      126.5,
+      127.5,
+      128.5,
+      129.5,
+      129.5 + TRANSITION_GAP_S,
     ]);
     for (const blip of blips.slice(0, 5)) expect(blip.canceled).toBe(true);
   });
@@ -187,7 +193,9 @@ describe("cableado de cues — disparadores §6.3 a través del orquestador", ()
     // Quedan 9 y 10 s → base 100 → 101/102 + transición 102(+gap).
     const blips = audioHolder.ctx!.blips();
     expect(blips.slice(5).map((b) => b.startedAt)).toEqual([
-      101, 102, 102 + TRANSITION_GAP_S,
+      101,
+      102,
+      102 + TRANSITION_GAP_S,
     ]);
     for (const blip of blips.slice(0, 5)) expect(blip.canceled).toBe(true);
   });
@@ -198,12 +206,8 @@ describe("cableado de cues — disparadores §6.3 a través del orquestador", ()
 
     act(() => vi.advanceTimersByTime(1_000)); // 4 ticks de 250 ms
 
-    expect(blipStarts()).toEqual([
-      107, 108, 109, 110, 110 + TRANSITION_GAP_S,
-    ]); // exactamente la primera programación: sin cancelar ni duplicar
-    expect(
-      audioHolder.ctx!.blips().every((b) => !b.canceled),
-    ).toBe(true);
+    expect(blipStarts()).toEqual([107, 108, 109, 110, 110 + TRANSITION_GAP_S]); // exactamente la primera programación: sin cancelar ni duplicar
+    expect(audioHolder.ctx!.blips().every((b) => !b.canceled)).toBe(true);
   });
 
   it("completar NO cancela: el cue de transición final ya programado sigue sonando", () => {
