@@ -20,3 +20,34 @@ export const NAV_LABELS = {
  ajustes: "Ajustes",
 } as const;
 export type NavKey = keyof typeof NAV_LABELS;
+
+// ——— Copy de configuración (U5: pantallas Clásico/Tabata) ———
+
+export const CONFIG_COPY = {
+ iniciar: "Iniciar",
+ duracionTotal: "Duración total",
+ campos: {
+  preparacionS: "Preparación",
+  trabajoS: "Trabajo",
+  descansoS: "Descanso",
+  rondas: "Rondas",
+  rondasPorTabata: "Rondas por tabata",
+  tabatas: "Tabatas",
+  descansoLargoS: "Descanso largo",
+ },
+ descripcion: {
+  clasico: "Preparación, trabajo y descanso en rondas.",
+  tabata: "Rondas por tabata con descanso largo entre tabatas.",
+ },
+} as const;
+
+// ——— Copy del inicio (U5: HomeScreen) ———
+
+export const HOME_COPY = {
+ subtitulo: "Elige un modo y configura tu entrenamiento",
+ modos: {
+  clasico: "Preparación, trabajo y descanso en rondas.",
+  tabata: "Rondas por tabata con descanso largo entre tabatas.",
+  personalizado: "Encadena bloques clásicos y tabata a tu medida.",
+ },
+} as const;
