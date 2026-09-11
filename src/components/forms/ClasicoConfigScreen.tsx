@@ -7,9 +7,11 @@
 // se deriva del plan compilado (compilePlan es puro, §3.2).
 
 import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CONFIG_COPY } from "@/components/shared/copy";
+import { CONFIG_COPY, ROUTINES_COPY } from "@/components/shared/copy";
+import { SaveRoutineDialog } from "@/components/routines/SaveRoutineDialog";
 import { compilePlan } from "@/lib/timer/plan";
 import { formatDurationMs, totalPlanMs } from "@/lib/timer/duration";
 import { MODE, type ClasicoConfig } from "@/lib/timer/types";
@@ -44,11 +46,22 @@ export function ClasicoConfigScreen() {
     control,
     handleSubmit,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<ClasicoFormValues>({
     resolver: zodResolver(clasicoValuesSchema),
     defaultValues: DEFAULT_VALUES,
   });
+
+  const [guardando, setGuardando] = useState(false);
+
+  // Config ACTUAL para «Guardar rutina» (U9): se evalúa al confirmar el
+  // diálogo; formulario inválido → null → mensaje en línea (el store también
+  // valida — defensa en profundidad). "Iniciar" sigue siendo el único submit.
+  const getConfig = (): ClasicoConfig | null => {
+    const parsed = clasicoValuesSchema.safeParse(getValues());
+    return parsed.success ? { mode: MODE.clasico, values: parsed.data } : null;
+  };
 
   const values = watch();
   const totalMs = summaryTotalMs(values);
@@ -135,6 +148,21 @@ export function ClasicoConfigScreen() {
       <Button type="submit" size="lg" className="w-full">
         {CONFIG_COPY.iniciar}
       </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => setGuardando(true)}
+      >
+        {ROUTINES_COPY.guardarRutina}
+      </Button>
+
+      <SaveRoutineDialog
+        open={guardando}
+        getConfig={getConfig}
+        onClose={() => setGuardando(false)}
+      />
     </form>
   );
 }

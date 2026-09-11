@@ -7,6 +7,7 @@
 // efecto del gate en toda carga de ruta — un registro viviendo en un chunk de
 // ruta llegaría tarde en navegaciones client-side posteriores.
 import { useHistoryStore } from "./historyStore";
+import { useRoutinesStore } from "./routinesStore";
 
 export type Rehydrator = () => Promise<unknown>;
 
@@ -15,5 +16,9 @@ export const storeRehydrators: Rehydrator[] = [
   // async: persist.rehydrate() devuelve void | Promise<void>; el gate espera promesa.
   async () => {
     await useHistoryStore.persist.rehydrate();
+  },
+  // U9 — rutinas: "tiptap.routines" (persistido v1, validado con zod).
+  async () => {
+    await useRoutinesStore.persist.rehydrate();
   },
 ];

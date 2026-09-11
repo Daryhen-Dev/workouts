@@ -6,9 +6,11 @@
 // reglas idénticas y «Iniciar» entrega la config exacta por el seam de U7.
 
 import { Controller, useForm } from "react-hook-form";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CONFIG_COPY } from "@/components/shared/copy";
+import { CONFIG_COPY, ROUTINES_COPY } from "@/components/shared/copy";
+import { SaveRoutineDialog } from "@/components/routines/SaveRoutineDialog";
 import { compilePlan } from "@/lib/timer/plan";
 import { formatDurationMs, totalPlanMs } from "@/lib/timer/duration";
 import { MODE, type TabataConfig, type TabataValues } from "@/lib/timer/types";
@@ -49,11 +51,25 @@ export function TabataConfigScreen() {
     control,
     handleSubmit,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<TabataFormValues>({
     resolver: zodResolver(tabataValuesSchema),
     defaultValues: DEFAULT_VALUES,
   });
+
+  const [guardando, setGuardando] = useState(false);
+
+  // Config ACTUAL para «Guardar rutina» (U9), evaluada al confirmar; el
+  // `rondas` vestigial se fija igual que al iniciar (flag U3).
+  const getConfig = (): TabataConfig | null => {
+    const parsed = tabataValuesSchema.safeParse(getValues());
+    if (!parsed.success) return null;
+    return {
+      mode: MODE.tabata,
+      values: { ...parsed.data, rondas: parsed.data.rondasPorTabata },
+    };
+  };
 
   const values = watch();
   const totalMs = summaryTotalMs(values);
@@ -171,6 +187,21 @@ export function TabataConfigScreen() {
       <Button type="submit" size="lg" className="w-full">
         {CONFIG_COPY.iniciar}
       </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => setGuardando(true)}
+      >
+        {ROUTINES_COPY.guardarRutina}
+      </Button>
+
+      <SaveRoutineDialog
+        open={guardando}
+        getConfig={getConfig}
+        onClose={() => setGuardando(false)}
+      />
     </form>
   );
 }

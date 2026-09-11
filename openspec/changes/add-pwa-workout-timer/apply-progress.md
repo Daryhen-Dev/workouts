@@ -523,3 +523,78 @@ U8–U13 sin marcar (31 tareas). Next unit: **U8 — Completion + history — PR
 - Work found staged and green on inspection: 277/277 tests (25 files; +62 vs U7 baseline: query/filters/stats, persisted round-trip + corrupt-JSON defaults, completion wiring exactly-once, CompletionSummary 85s-active vs 115s-wall, HistoryScreen composing filters + Spanish labels).
 - Orchestrator fixes before delivery: 3 zustand-persist generic errors in `persisted.test.ts` (explicit `<S, T>` at call sites — `S` is not inferable from args) + 1 unused-var lint (`set` → `_set` in a no-op creator). tasks.md U8 lines verified satisfied and checked (TRIANGULATE via test content inspection; REFACTOR via import graph).
 - Evidence: `pnpm test` 25 files / 277 tests passed; `pnpm lint` clean; `tsc --noEmit` exit 0.
+
+---
+
+## U9 — Routines (PR 9)
+
+**Branch**: `u9-routines` (from `main` @ 9b89e37). Strict TDD active (`pnpm test` = vitest run).
+
+**Status: COMPLETE.** All 5 U9 task checkboxes marked `- [x]` in `tasks.md`.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED-1 | `src/stores/routinesStore.test.ts` | `Error: Failed to resolve import "./routinesStore"` — Test Files 1 failed, no tests ran | 17/17 pass (fix intermedio honesto: 3 fixtures — `setState` persiste el corte vacío al simular recarga, así que el disco se re-siembra tras limpiar memoria, patrón historyStore.test; y el aserto `readStored()).toBeNull()` tras remove era incorrecto — remove legítimamente reescribe SU clave) |
+| GREEN-1 | `routinesStore.ts` + registro en `storeRehydrators.ts` | (mismo run) | historyStore + gate siguen verdes (27/27 en los 3 archivos) |
+| RED-2 | `RoutinesScreen.test.tsx` | `Failed to resolve import "./RoutinesScreen"` — Test Files 1 failed | 7/7 pass (fix honesto: modo y fecha en elementos separados — un solo nodo de texto «Clásico · 12/2/2025» no matchea `getByText("Clásico")`) |
+| GREEN-2 | `RoutineNameDialog` + `SaveRoutineDialog` + `RenameDialog` + `ConfirmDeleteRoutineDialog` + `RoutineCard` + `RoutinesScreen` + `rutinas/page.tsx` + `ROUTINES_COPY` | (mismo run) | (mismo run) |
+| RED-3 | adiciones a `ClasicoConfigScreen.test` (+3), `TabataConfigScreen.test` (+1), `PersonalizadoBuilder.test` (+1), `HomeScreen.test` (+2, reescrito) | 6 failed: ×5 `Unable to find button "Guardar rutina"` + ×1 `Unable to find text "Rutinas guardadas"` — 39 preexistentes verdes | 52/52 en los 5 archivos de pantalla |
+| GREEN-3 | botones «Guardar rutina» + `SaveRoutineDialog` en las 3 pantallas; slot de rutinas rápidas en `HomeScreen` | (mismo run) | (mismo run) |
+| REFACTOR | auditoría de compartición + frontera (greps) | — | los DOS diálogos (guardar/renombrar) son cableados delgados sobre `RoutineNameDialog` (nombre/validación/rama de sobrescritura en UN solo lugar); `/rutinas/page.tsx` queda servidor (0 `use client`); `routinesStore` sin imports de React; copy.test re-escanea ROUTINES_COPY automáticamente |
+
+Safety net: baseline `pnpm test` en `main` antes de editar → **277/277** (25 archivos). Sin fallos preexistentes.
+
+Verificación final en la rama: `pnpm test` → **Test Files 27 passed (27), Tests 308 passed (308)** (+31 vs U8) · `pnpm lint` 0 errores (1 warning PREEXISTENTE de U8: `_set` en `persisted.test.ts`) · `pnpm exec tsc --noEmit` exit 0 · `pnpm build` verde (12 rutas estáticas; `/rutinas` 3.09 kB — antes placeholder).
+
+### Spec → tests (routines)
+
+| Scenario | Test |
+| --- | --- |
+| Save a Clásico routine | store «guarda con nombre y modo…» + Clásico «guarda la configuración actual con los valores exactos» |
+| Empty name rejected | store «nombre vacío…» + Clásico «nombre vacío: error en línea y ninguna rutina creada» + Rename vacío (RoutinesScreen) |
+| Duplicate names never silently overwrite | store «pide confirmación y NO toca la original» + «con overwrite EXPLÍCITO reemplaza…» + Clásico UI «confirmación EXPLÍCITA antes de sobrescribir» (original intacta hasta pulsar Sobrescribir) |
+| Personalizado routine keeps the full sequence | store «save → load → compilePlan igualdad exacta incluido descanso global» (2 descansos globales de 20 s entre 3 bloques, rehydrate intermedio) + Builder «guarda la secuencia completa; el plan conserva el descanso global» |
+| Start directly from the list | RoutinesScreen «Iniciar arranca… config exacta y navega a /sesion» + personalizado full-sequence + HomeScreen slot «arranca directamente con la config exacta» |
+| Routines survive reload | store «round-trip: disco con rutinas + rehydrate()» + «registro en el gate» |
+| Rename preserves configuration | store «renombrar cambia SOLO el nombre» + RoutinesScreen «renombrar cambia el nombre visible y conserva la config original» (iniciar tras renombrar entrega la original) |
+| Delete removes only the routine | store «eliminar no toca las demás NI el historial» (memoria + clave de disco del historial byte a byte) + RoutinesScreen flujo cancelar/confirmar (aislamiento de UI) |
+
+### Files changed
+
+- `src/stores/routinesStore.ts` — store persistido v1: `save(config, name, {overwrite?})`/`rename`/`remove` con la unión `RoutineWriteResult` (saved / rejected-empty-name / rejected-duplicate-name / rejected-invalid-config / rejected-missing / **confirm-overwrite**). Aduana de config: `sessionConfigSchema.safeParse` antes de escribir (una config inválida en disco rebotaría al rehidratar y el fallback tiraría TODA la lista). `normalizeConfig` fija el `rondas` vestigial de Tabata a nivel config Y de bloque Personalizado (mismo criterio que las pantallas U5/U6 — sin cast).
+- `src/stores/storeRehydrators.ts` — rehydrator de "tiptap.routines" registrado en el gate (§2.3).
+- `src/components/routines/RoutineNameDialog.tsx` — diálogo COMPARTIDO (decisión de simplificación: modal a mano patrón U7 — radix NO está en las deps aprobadas y tasks.md U9 permite elegir el patrón simple; `role="dialog"` + `aria-modal`): nombre + validación en línea + **rama explícita de sobrescritura**; mapea `RoutineWriteResult` → UI.
+- `src/components/routines/{SaveRoutineDialog,RenameDialog,ConfirmDeleteRoutineDialog}.tsx` — cableados delgados: save evalúa `getConfig()` AL CONFIRMAR (valores actuales; null si el formulario es inválido → mensaje en línea); rename nunca ofrece sobrescritura (pisar a otra rutina perdería su config; la spec solo exige la rama al guardar); delete usa alertdialog a mano (patrón ConfirmStopDialog).
+- `src/components/routines/{RoutinesScreen,RoutineCard}.tsx` — única entrada cliente de /rutinas: lista (nombre, MODE_LABEL verbatim, fecha `Intl "es"`), Iniciar directo (`sessionStore.start(routine.config)` + `/sesion`), Renombrar/Eliminar con diálogos; estado vacío español.
+- `src/app/rutinas/page.tsx` — shell servidor (reemplaza el placeholder U2).
+- `src/components/shared/copy.ts` — bloque `ROUTINES_COPY` + `HOME_COPY.rutinasTitulo`; la auditoría de copy re-escanea automáticamente (allowlist segundo plano).
+- `src/components/forms/{Clasico,Tabata}ConfigScreen.tsx`, `src/components/builder/PersonalizadoBuilder.tsx` — botón «Guardar rutina» (outline, NO submit) + `SaveRoutineDialog` con `getConfig` de los valores actuales.
+- `src/components/home/HomeScreen.tsx` — slot de rutinas rápidas: lista con nombre + modo + icono play; arranque directo; oculto sin rutinas.
+- Tests: `routinesStore.test.ts` (17), `RoutinesScreen.test.tsx` (7), +3/+1/+1/+2 en las pantallas existentes.
+
+### Decisions / deviations
+
+- **Diálogos a mano (patrón U7), no radix**: documentado en cada componente — radix no está en el set de deps aprobado; tasks.md U9 da a elegir «hand-write dialog (radix) or reuse the U7 alert-dialog pattern — pick simpler». Semántica: `role="dialog"`/`alertdialog` + `aria-modal` + aria-labelledby/describedby.
+- **`rejected-invalid-config` (extensión honesta del contrato RED)**: tasks.md pedía empty-name/duplicate/rename/delete/persistencia; se añade la aduana de config porque el fallback zod de `createValidatedPersist` descartaría TODA la lista si un registro inválido llegara a disco — la defensa es estructural. La UI lo muestra como error en línea («Revisa los valores…»).
+- **Rename sin rama de sobrescritura**: renombrar al nombre de otra rutina → rechazo con mensaje; sobrescribir a otra rutina perdería SU config y la spec solo exige confirmación explícita al GUARDAR.
+- **`rejected-missing` en rename** (id inexistente, p. ej. borrado en otra pestaña): el diálogo compartido cierra sin tocar nada — respuesta honesta documentada.
+- **Guardar con formulario inválido no bloquea el botón**: abre el diálogo y el error aparece en línea al confirmar (getConfig → null o store → rejected-invalid-config). Misma honestidad que el resumen «—» de las pantallas.
+- **Trim del nombre** en save/rename ("  Piernas  " → "Piernas"); colisión por igualdad exacta tras trim (case-sensitive).
+- **overwrite conserva id y createdAt** (semántica de actualización de ESA rutina).
+- **HomeScreen.test reescrito**: el archivo original no mockeaba `sessionStore` (la portada no lo importaba); ahora mockea `start` (contrato del slot) y resetea el store de rutinas; los 2 tests originales de tarjetas de modo se conservan idénticos en sustancia.
+
+### Remaining tasks
+
+U10–U13 sin marcar (22 tareas). Next unit: **U10 — Audio I: in-memory beeps — PR 10** (primer sin marcar: `- [ ] RED: src/lib/audio/cues.test.ts`).
+
+### Workload / PR boundary
+
+- PR 9 = U9 only, branch `u9-routines` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Diff: 21 archivos, 1695 inserciones / 26 eliminaciones (≈800 implementación + ≈800 tests + ≈75 artifacts). Por encima del presupuesto de 400 líneas — misma postura que U3–U8: los tests son ~47% y cubren los 8 escenarios literales del spec routines + persistencia + aislamiento; la ruta auto-chain está resuelta (forecast por-unidad «Medium»). Se reporta para el chequeo de tamaño del orquestador (`size:exception` disponible si el reviewer quiere dividir, aunque separar el store de sus tests de spec rompería la co-localización). Dentro del presupuesto del intento (2200).
+
+### Structured status consumed
+
+- `applyState: ready` (44/71 complete al iniciar), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta. Attempt authority: u9-1789156891-18801 (nunca escrito a ningún archivo del repo).
+
