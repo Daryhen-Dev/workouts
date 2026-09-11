@@ -108,11 +108,11 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: `src/app/page.tsx` + `HomeScreen`, `src/app/clasico/page.tsx`, `src/app/tabata/page.tsx`, config screens, `src/components/forms/DurationField.tsx`, `ValidatedNumberInput.tsx`.
 **Acceptance hooks**: timer-modes — "Valid configuration starts a session", "Invalid values block the start", "Valid Tabata configuration", "Mode Selection: all modes reachable" (personalizado route completes in U6).
 
-- [ ] RED: `src/components/forms/ClasicoConfigScreen.test.tsx` and `TabataConfigScreen.test.tsx` — trabajo set to 0 (and each other invalid class: negative, non-numeric, non-integer) shows a visible Spanish validation message and start does not fire; valid values fire start with the exact config. <!-- sdd-owner: implementation -->
-- [ ] GREEN: screens with react-hook-form + zodResolver over `configSchemas`, `DurationField` stepper (whole seconds) and `ValidatedNumberInput`; "Iniciar" calls `sessionStore.start(config)` and navigates to `/sesion` (sessionStore mocked in tests — the mock encodes the contract implemented in U7). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: Tabata's six fields validate under the identical rules and start a session with exact values. <!-- sdd-owner: implementation -->
-- [ ] GREEN: home surface — server `src/app/page.tsx` shell + client `HomeScreen` with mode cards labeled verbatim Clásico / Tabata / Personalizado, each navigating to its configuration screen (quick-routines slot stubbed until U9; install nudge until U13). <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: shared form-field components; each route keeps exactly one client entry component (§2.3). <!-- sdd-owner: implementation -->
+- [x] RED: `src/components/forms/ClasicoConfigScreen.test.tsx` and `TabataConfigScreen.test.tsx` — trabajo set to 0 (and each other invalid class: negative, non-numeric, non-integer) shows a visible Spanish validation message and start does not fire; valid values fire start with the exact config. <!-- sdd-owner: implementation -->
+- [x] GREEN: screens with react-hook-form + zodResolver over `configSchemas`, `DurationField` stepper (whole seconds) and `ValidatedNumberInput`; "Iniciar" calls `sessionStore.start(config)` and navigates to `/sesion` (sessionStore mocked in tests — the mock encodes the contract implemented in U7). <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: Tabata's six fields validate under the identical rules and start a session with exact values. <!-- sdd-owner: implementation -->
+- [x] GREEN: home surface — server `src/app/page.tsx` shell + client `HomeScreen` with mode cards labeled verbatim Clásico / Tabata / Personalizado, each navigating to its configuration screen (quick-routines slot stubbed until U9; install nudge until U13). <!-- sdd-owner: implementation -->
+- [x] REFACTOR: shared form-field components; each route keeps exactly one client entry component (§2.3). <!-- sdd-owner: implementation -->
 
 ## U6 — Personalizado builder — PR 6
 

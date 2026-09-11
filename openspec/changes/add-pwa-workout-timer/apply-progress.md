@@ -297,3 +297,76 @@ U5–U13 sin marcar (46 tareas). Next unit: **U5 — Config screens: Clásico / 
 ### Structured status consumed
 
 - `applyState: ready` (20/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
+
+---
+
+## U5 — Config screens: Clásico / Tabata (PR 5)
+
+**Branch**: `u5-config-screens` (from `main` @ f0b1cf4). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u5-1789131871-8855 (never written to any repo file).
+
+### Completed tasks (tasks.md checkboxes updated 5/5 U5 → `- [x]`)
+
+RED (1), GREEN (2), TRIANGULATE (1), REFACTOR (1) — all U5 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED | `ClasicoConfigScreen.test.tsx` + `TabataConfigScreen.test.tsx` | `Failed to resolve import "./ClasicoConfigScreen"` / `"./TabataConfigScreen"` — Test Files 2 failed | both files green after GREEN+TRIANGULATE below |
+| GREEN (support units first) | `zodResolver.test.ts`, `duration.test.ts`, `DurationField.test.tsx` | batch-2 RED: Test Files 5 failed (imports) | all green |
+| GREEN | `ClasicoConfigScreen.tsx` + `clasico/page.tsx` + resolver/duration/ui/sessionStore/copy | (incluido arriba) | 4 clases inválidas de trabajo (0, −5, «abc», 3.5) bloquean con mensaje español; válidos → `start` exacto + `/sesion`; resumen 1:25 → 0:40 → «—» |
+| TRIANGULATE | `TabataConfigScreen.tsx` + `tabata/page.tsx` | (incluido arriba) | 6 campos × clase 0 + 3 clases extra (no-numérico/decimal/negativo) bloquean; config exacta 10/22/10/2/3/45 arranca; resumen 2:50 → 1:00 |
+| GREEN home | `home/HomeScreen.test.tsx` | `Failed to resolve import "./HomeScreen"` | tarjetas verbatim Clásico/Tabata/Personalizado navegan a sus rutas |
+| REFACTOR | auditoría §2.3 (grep `use client`) | — | exactamente 3 entradas cliente de ruta (`HomeScreen`, `ClasicoConfigScreen`, `TabataConfigScreen`); las 3 `page.tsx` nuevas son servidor; suite completa **162/162** (15 archivos), `pnpm lint` limpio, `tsc --noEmit` exit 0, `pnpm build` verde (9 rutas, +`/clasico` +`/tabata`) |
+
+Safety net: baseline `pnpm test` en `main` antes de editar → **120/120**. Sin fallos preexistentes.
+
+Fix-up intermedio (RED honesto): tras el primer GREEN, RHF con resolver valida de forma asíncrona → los asserts síncronos fallaban; se envolvieron en `waitFor` (tests), y el stepper desde NaN se fijó a `min` exacto (impl, documentado).
+
+### Files changed
+
+- `src/components/ui/{button,input,label}.tsx` — patrones shadcn escritos a mano, SIN radix ni cva (const objects; fallback pre-autorizado: CLI alpha inutilizable — U1/U2). Primary = acento + glow §9.1.
+- `src/components/forms/ValidatedNumberInput.tsx` — base compartida: label + input numérico (draft local; «abc»/vacío → `NaN` al formulario) + error español `role="alert"`; slots para componer steppers.
+- `src/components/forms/DurationField.tsx` — stepper de segundos enteros: −/+ clamp a [min,max] (defaults 1..3600 del schema), NaN → recupera `min`; texto tecleado SIN clamp (zod reporta límites).
+- `src/components/forms/{Clasico,Tabata}ConfigScreen.tsx` — RHF + `zodResolver` local sobre `configSchemas`; resumen vivo vía `compilePlan` (puro) + `totalPlanMs`; «Iniciar» → `sessionStore.start(config)` + `router.push("/sesion")`.
+- `src/app/page.tsx` (shell servidor + HomeScreen), `src/app/clasico/page.tsx` y `src/app/tabata/page.tsx` (shells servidor con encabezado/metadata en español).
+- `src/components/home/HomeScreen.tsx` — tarjetas de modo verbatim + descripciones; iconos lucide; slot de rutinas rápidas stub (comentario) hasta U9; nudge de instalación hasta U13.
+- `src/stores/sessionStore.ts` — **SEAM U5→U7** (ver decisiones).
+- `src/lib/validation/zodResolver.ts` — adaptador zod→RHF mínimo (ver decisiones).
+- `src/lib/timer/duration.ts` — `formatDurationMs` (m:ss / h:mm:ss, reutilizable por U8) + `totalPlanMs`.
+- `src/components/shared/copy.ts` — bloque `CONFIG_COPY` (iniciar, duración total, 7 etiquetas de campo, descripciones) + `HOME_COPY` (subtítulo + 3 descripciones de modo). Auditoría de copy existente sigue verde.
+- `src/app/page.test.tsx` — smoke U1 actualizado con mock de `useRouter` (la portada ahora monta entrada cliente; el propósito del smoke — cadena vitest+RTL+jest-dom + título — se conserva).
+- Tests nuevos: los 6 archivos listados en la tabla.
+
+### Spec → tests (timer-modes / ui-design)
+
+| Scenario | Test |
+| --- | --- |
+| Valid configuration starts a session | Clásico «valores válidos… config exacta» (5/25/10/3) + push /sesion |
+| Invalid values block the start | it.each 4 clases (0/−5/abc/3.5) — mensaje español visible, `start` NUNCA llamado |
+| Valid Tabata configuration | Tabata «valores válidos… config exacta» (10/22/10/2/3/45) |
+| Mode Selection: all modes reachable | HomeScreen 3 tarjetas verbatim → /clasico, /tabata, /personalizado (ruta la completa U6) |
+| Copy audit (parcial) | copy.test.ts de U2 re-escanea CONFIG_COPY/HOME_COPY (allowlist segundo plano) — verde |
+
+### Decisions / deviations
+
+- **`zodResolver` local** (`src/lib/validation/zodResolver.ts`) en lugar de `@hookform/resolvers`: el paquete NO está en el set de dependencias aprobado (U1) y el orquestador pidió mantener deps al mínimo. Misma forma de llamada (`resolver: zodResolver(schema)`), soporta rutas planas (U5) y anidadas `blocks.0.values.x` (contrato para U6, testeado). Tipo de retorno síncrono `(values) => ResolverResult` — asignable al `Resolver` de RHF.
+- **Seam elegido**: `src/stores/sessionStore.ts` como contrato mínimo (variable de módulo) — `start(config)` retiene la config pendiente; U7 lo reemplaza por el store zustand real con el motor U4. Descartada la alternativa sessionStorage (tasks.md fija literalmente `sessionStore.start`). La pantalla navega tras `start` (mock de tests = contrato U7).
+- **`rondas` vestigial (flag U3)**: al construir `TabataConfig` se fija `rondas: rondasPorTabata` (submit y resumen) — documentado en pantalla y tests; la compilación usa exclusivamente `rondasPorTabata`.
+- **«Guardar rutina»**: no se renderiza nada (U9 lo añade) — decisión pedida y documentada por el orquestador.
+- **Stepper desde NaN** → recupera `min` (no min+1): comportamiento documentado y testeado.
+- **FireEvent, no user-event**: `@testing-library/user-event` no está en el set de deps; `fireEvent.click` sobre el botón submit dispara `submit` en jsdom (verificado con probe antes de escribir los tests).
+- Advisory typos «unknown word» del harness sobre español: falsos positivos de cspell, consistentes con unidades previas; sin acción.
+
+### Remaining tasks
+
+U6–U13 sin marcar (41 tareas). Next unit: **U6 — Personalizado builder — PR 6** (primer sin marcar: `- [ ] RED: src/components/builder/PersonalizadoBuilder.test.tsx`).
+
+### Workload / PR boundary
+
+- PR 5 = U5 only, branch `u5-config-screens` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Authored lines ≈ 720 (implementación ≈ 370: screens 2×~150, fields ~90, ui ~90, resolver/duration/sessionStore/copy ~120; tests ≈ 350: 6 archivos). Por encima del estimado ~300 y del presupuesto 400: los tests son el 49% y son los escenarios literales del spec timer-modes (4+9 clases inválidas + config exacta + resumen compilePlan); la ruta auto-chain está resuelta y el forecast por-unidad era «Medium». Se reporta para el chequeo de tamaño del orquestador (`size:exception` disponible si el reviewer quiere dividir, aunque separar las pantallas de sus tests de spec rompería la co-localización). Dentro del presupuesto del intento (1500).
+
+### Structured status consumed
+
+- `applyState: ready` (25/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
