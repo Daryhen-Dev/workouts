@@ -4,3 +4,23 @@
 
 # Dependencies
 node_modules/
+
+# Next.js build output
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# PWA build artifact (U12 Serwist output)
+public/sw.js
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Vitest
+.vitest/
+
+# Misc
+.DS_Store

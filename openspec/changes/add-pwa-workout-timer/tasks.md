@@ -59,15 +59,15 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: Next.js 15 app, pnpm, TS strict, Tailwind v4, App Router, `src/` dir; shadcn init; runtime + dev deps; Vitest/RTL/jsdom + **fake-indexeddb + @playwright/test** (dev-only); `vitest.config.ts`, `playwright.config.ts`, `src/test/setup.ts`.
 **Acceptance hooks**: `openspec/config.yaml` scaffold rule (RED-exempt + runner smoke); enables every later unit. No spec scenarios directly.
 
-- [ ] Scaffold the app with `pnpm create next-app` (TypeScript strict, Tailwind v4, App Router, `src/` directory, pnpm) and verify `pnpm build` and `pnpm dev` succeed on the fresh template. <!-- sdd-owner: implementation -->
-- [ ] Run `shadcn` init (CSS-variables wiring only); the 14-component inventory (design §9.3) is added per-unit as consumed so generated code lands with its consumer. <!-- sdd-owner: implementation -->
-- [ ] Install runtime deps: `zustand`, `react-hook-form`, `zod`, `@serwist/next`, `@serwist/sw`, `idb`, `lucide-react`. <!-- sdd-owner: implementation -->
-- [ ] Install dev-only deps — explicit orchestrator carry-over: `vitest`, `@vitejs/plugin-react`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`, **`fake-indexeddb`** (jsdom has no IndexedDB — music-store tests), **`@playwright/test`** (jsdom cannot host service workers — offline smoke). <!-- sdd-owner: implementation -->
-- [ ] Create `vitest.config.ts` (jsdom environment, `@` → `src/` alias, setup file) and `src/test/setup.ts` (jest-dom, RTL cleanup, navigator-stubbing helper starting point); add script `"test": "vitest run"` (non-watch, CI-safe). <!-- sdd-owner: implementation -->
-- [ ] Create `playwright.config.ts` (chromium-only, `webServer` running `pnpm build && pnpm start`) and script `"test:offline": "playwright test"` (the spec file itself lands in U12). <!-- sdd-owner: implementation -->
-- [ ] React Compiler decision stays inside this unit: enable `experimental.reactCompiler` in `next.config.ts`; on any tooling conflict drop the flag and keep the no-manual-memoization discipline (design §13); record the outcome. <!-- sdd-owner: implementation -->
-- [ ] Runner smoke test: add one trivial passing test proving `pnpm test` executes `vitest run` (e.g. `src/app/page.test.tsx` asserting the template renders); capture the command output as evidence. <!-- sdd-owner: implementation -->
-- [ ] Update `openspec/config.yaml` non-destructively (extend, do not rewrite): `testing.installed: true`, `status: installed`, and the actual runner evidence its `install_note` requires. <!-- sdd-owner: implementation -->
+- [x] Scaffold the app with `pnpm create next-app` (TypeScript strict, Tailwind v4, App Router, `src/` directory, pnpm) and verify `pnpm build` and `pnpm dev` succeed on the fresh template. <!-- sdd-owner: implementation -->
+- [x] Run `shadcn` init (CSS-variables wiring only); the 14-component inventory (design §9.3) is added per-unit as consumed so generated code lands with its consumer. <!-- sdd-owner: implementation -->
+- [x] Install runtime deps: `zustand`, `react-hook-form`, `zod`, `@serwist/next`, `@serwist/sw`, `idb`, `lucide-react`. <!-- sdd-owner: implementation -->
+- [x] Install dev-only deps — explicit orchestrator carry-over: `vitest`, `@vitejs/plugin-react`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`, **`fake-indexeddb`** (jsdom has no IndexedDB — music-store tests), **`@playwright/test`** (jsdom cannot host service workers — offline smoke). <!-- sdd-owner: implementation -->
+- [x] Create `vitest.config.ts` (jsdom environment, `@` → `src/` alias, setup file) and `src/test/setup.ts` (jest-dom, RTL cleanup, navigator-stubbing helper starting point); add script `"test": "vitest run"` (non-watch, CI-safe). <!-- sdd-owner: implementation -->
+- [x] Create `playwright.config.ts` (chromium-only, `webServer` running `pnpm build && pnpm start`) and script `"test:offline": "playwright test"` (the spec file itself lands in U12). <!-- sdd-owner: implementation -->
+- [x] React Compiler decision stays inside this unit: enable `experimental.reactCompiler` in `next.config.ts`; on any tooling conflict drop the flag and keep the no-manual-memoization discipline (design §13); record the outcome. <!-- sdd-owner: implementation -->
+- [x] Runner smoke test: add one trivial passing test proving `pnpm test` executes `vitest run` (e.g. `src/app/page.test.tsx` asserting the template renders); capture the command output as evidence. <!-- sdd-owner: implementation -->
+- [x] Update `openspec/config.yaml` non-destructively (extend, do not rewrite): `testing.installed: true`, `status: installed`, and the actual runner evidence its `install_note` requires. <!-- sdd-owner: implementation -->
 
 ## U2 — Tokens + shell — PR 2
 
