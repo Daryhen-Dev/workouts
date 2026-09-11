@@ -21,7 +21,11 @@ import { Button } from "@/components/ui/button";
 import { CONFIG_COPY } from "@/components/shared/copy";
 import { compilePlan } from "@/lib/timer/plan";
 import { formatDurationMs, totalPlanMs } from "@/lib/timer/duration";
-import { MODE, type BlockDef, type PersonalizadoConfig } from "@/lib/timer/types";
+import {
+  MODE,
+  type BlockDef,
+  type PersonalizadoConfig,
+} from "@/lib/timer/types";
 import {
   personalizadoValuesSchema,
   type BlockFormValues,
@@ -41,7 +45,12 @@ const DEFAULT_VALUES: PersonalizadoFormValues = {
 };
 
 // Semillas con los valores por defecto de U5 para cada tipo de bloque.
-const CLASICO_SEED = { preparacionS: 10, trabajoS: 30, descansoS: 15, rondas: 2 };
+const CLASICO_SEED = {
+  preparacionS: 10,
+  trabajoS: 30,
+  descansoS: 15,
+  rondas: 2,
+};
 const TABATA_SEED = {
   preparacionS: 10,
   trabajoS: 20,
@@ -55,7 +64,10 @@ let fallbackCounter = 0;
 
 /** Id estable por bloque: crypto.randomUUID, o contador si no existe (jsdom). */
 function newBlockId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   fallbackCounter += 1;
@@ -178,10 +190,18 @@ export function PersonalizadoBuilder() {
     clearErrors("blocks");
   };
 
-  const changeBlockField = (index: number, campo: BlockCampo, valor: number) => {
-    setValue(`blocks.${index}.values.${campo}` as Path<PersonalizadoFormValues>, valor, {
-      shouldDirty: true,
-    });
+  const changeBlockField = (
+    index: number,
+    campo: BlockCampo,
+    valor: number,
+  ) => {
+    setValue(
+      `blocks.${index}.values.${campo}` as Path<PersonalizadoFormValues>,
+      valor,
+      {
+        shouldDirty: true,
+      },
+    );
   };
 
   const onSubmit = (data: PersonalizadoFormValues) => {
@@ -194,7 +214,8 @@ export function PersonalizadoBuilder() {
   };
 
   // Error a nivel de array (cero bloques): message directo del resolver.
-  const arrayError = (errors.blocks as { message?: string } | undefined)?.message;
+  const arrayError = (errors.blocks as { message?: string } | undefined)
+    ?.message;
 
   return (
     <form

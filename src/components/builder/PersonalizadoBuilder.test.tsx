@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Contrato del seam con U7 (mismo patrón que U5): "Iniciar" llama
@@ -37,7 +43,9 @@ function setGlobalField(label: string, value: string) {
 }
 
 function addBlock(tipo: "Clásico" | "Tabata") {
-  fireEvent.click(screen.getByRole("button", { name: `Añadir bloque ${tipo}` }));
+  fireEvent.click(
+    screen.getByRole("button", { name: `Añadir bloque ${tipo}` }),
+  );
 }
 
 function iniciar() {
@@ -88,7 +96,9 @@ describe("PersonalizadoBuilder — estado y UI de bloques", () => {
     expect(within(clasico).getByLabelText("Rondas")).toBeInTheDocument();
 
     const tabata = card("Bloque 2 · Tabata");
-    expect(within(tabata).getByLabelText("Rondas por tabata")).toBeInTheDocument();
+    expect(
+      within(tabata).getByLabelText("Rondas por tabata"),
+    ).toBeInTheDocument();
     expect(within(tabata).getByLabelText("Tabatas")).toBeInTheDocument();
     expect(within(tabata).getByLabelText("Descanso largo")).toBeInTheDocument();
   });
@@ -100,9 +110,13 @@ describe("PersonalizadoBuilder — estado y UI de bloques", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Eliminar bloque 1" }));
 
-    expect(screen.queryByRole("heading", { name: "Bloque 2 · Tabata" })).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: "Bloque 2 · Tabata" }),
+    ).toBeNull();
     // El Tabata superviviente se renumera a la posición 1.
-    expect(screen.getByRole("heading", { name: "Bloque 1 · Tabata" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Bloque 1 · Tabata" }),
+    ).toBeInTheDocument();
   });
 
   it("reordena con «Subir»: el bloque 2 pasa a ejecutarse primero (visual)", () => {
@@ -111,8 +125,12 @@ describe("PersonalizadoBuilder — estado y UI de bloques", () => {
     addBlock("Tabata");
 
     // Guardas de los extremos: subir bloque 1 y bajar bloque 2 deshabilitados.
-    expect(screen.getByRole("button", { name: "Subir bloque 1" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Bajar bloque 2" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Subir bloque 1" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Bajar bloque 2" }),
+    ).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Subir bloque 2" }));
 

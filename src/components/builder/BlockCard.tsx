@@ -7,7 +7,11 @@
 
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BUILDER_COPY, CONFIG_COPY, MODE_LABEL } from "@/components/shared/copy";
+import {
+  BUILDER_COPY,
+  CONFIG_COPY,
+  MODE_LABEL,
+} from "@/components/shared/copy";
 import { MODE, type BlockDef, type TabataValues } from "@/lib/timer/types";
 import { DurationField } from "@/components/forms/DurationField";
 import { ValidatedNumberInput } from "@/components/forms/ValidatedNumberInput";
