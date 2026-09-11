@@ -225,3 +225,75 @@ U4–U13 all unchecked (57 tasks). Next unit: **U4 — Timer core II: engine + c
 ### Structured status consumed
 
 - `applyState: ready` (15/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace]`, no warnings. Attempt token authority: u3-1789125840-3888 (never written to any repo file).
+
+---
+
+## U4 — Timer core II: engine + clock (HARD GATE core) — PR 4
+
+**Branch**: `u4-timer-engine` (from `main` @ 406a2f1). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u4-1789131053-21812 (never written to any repo file).
+
+### Completed tasks (tasks.md checkboxes updated 5/5 U4 → `- [x]`)
+
+RED (1), GREEN (1), TRIANGULATE (2), REFACTOR (1) — all U4 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED | `src/lib/timer/engine.test.ts` (ciclo básico: 4 tests) | `Error: Failed to resolve import "./clock"` → Test Files 1 failed | 4/4 pass (startSession compila/ancha/retiene; vista inicial preparación; pausa congela; reanudar completa 20 s después exacto) |
+| GREEN | `clock.ts` + `engine.ts` | (mismo run) | (mismo run) |
+| TRIANGULATE-1 (HARD GATE) | +6 tests (cinco scenarios + pausa tardía) | Pasaron al primer run tras GREEN — uniformidad estructural (una sola fórmula; sin ramas por escenario). **Chequeo de mutación** como evidencia de dientes: romper `>= totalActiveMs` → `>` y `ceil` → `floor` ⇒ **5 tests fallan** (frontera de completado, elapsed exacto, idempotencia, redondeo ×2); revertido → 19/19 | 19/19 pass |
+| TRIANGULATE-2 | +9 tests (deriva 85 s / displaySeconds / guardas) | (incluido arriba en la mutación) | 19/19 pass |
+| REFACTOR | extracción `findPhaseAt` + pureza ampliada | — | suite completa **120/120** (9 archivos); `pnpm lint` limpio; `pnpm exec tsc --noEmit` exit 0 |
+
+Safety net: `pnpm test` baseline en `main` antes de editar → **97/97** (8 archivos). Sin fallos preexistentes.
+
+### Files changed
+
+- `src/lib/timer/clock.ts` — `Clock` re-exportado (fuente única en `types.ts` §3.1), `systemClock: Clock = () => Date.now()` (reloj de pared que avanza durante el sleep del dispositivo — decisión §3.3; `Date.now` es ECMAScript, no API de navegador), `createFakeClock(startMs?)` con `now()/advance(ms)/set(ms)`.
+- `src/lib/timer/engine.ts` — `startSession` (compila el plan internamente vía `compilePlan`, ancla `runningSince`, deriva `totalActiveMs`, retiene `config`), `pauseSession` (pliega `now − runningSince` en `accumulatedActiveMs`), `resumeSession` (re-ancla), `computeView` (aritmética del ancla §3.3 + `findPhaseAt` extraída en REFACTOR), `displaySeconds = ceil(remainingMs/1000)` (§3.4).
+- `src/lib/timer/engine.test.ts` — 19 tests: las siete scenarios de Wall-Clock Truth + Session Controls aritmética, literales con FakeClock.
+- `src/lib/timer/purity.test.ts` — PURE_MODULES + `engine.ts` + `clock.ts` (guardián de "sin React / sin APIs de navegador" sobre todo el núcleo).
+
+### Contratos documentados en engine.ts (decisiones fijadas)
+
+1. `startSession` compila el plan **internamente** (el estado nace coherente: plan + total + config de la misma fuente).
+2. `pauseSession` sobre paused/completed y `resumeSession` sobre running/completed → **no-op con la MISMA referencia** (identidad estructural; nunca lanza — observadores del controlador a salvo de pulsaciones duplicadas).
+3. `computeView` con `elapsed ≥ totalActiveMs` incluso con status "paused" (pausa tardía) → **vista completada**: la verdad de reloj de pared gana; una sesión terminada no se congela (testeado).
+4. La vista completada reporta `elapsedActiveMs = totalActiveMs` **exactamente** (los "totales configurados" del spec "Session completes while suspended"; el sobrepaso de reloj es latencia de detección, no actividad — testeado exacto).
+
+### Mapeo spec → tests (timer-correctness)
+
+| Scenario | Test |
+| --- | --- |
+| Pause freezes the countdown | "pausar congela fase y restante…" (vista idéntica tras +35 s de reloj) |
+| Resume continues the same phase | "reanudar continúa… exactamente 20 s después (reloj de pared)" (44_999 ms → 1 ms restante; 45 s → descanso) |
+| Return from background mid-phase | "background 5 s… → trabajo con exactamente 15 s restantes" (exacto; ±1 s es tolerancia de pantalla) |
+| Return from tab switch across a phase boundary | "cambio de pestaña 50 s… → trabajo FINAL con exactamente 15 s" (index 3, nextPhase null) |
+| Sleep/resume across multiple boundaries | "sleep 120 s… → posición exacta" (Tabata 180 s, cruza 6 fronteras: elapsed 155 s → fase 7 "Tabata 2 · Trabajo", 25 s) |
+| Session completes while suspended | "suspensión más allá del fin… idempotente" (completed, phase null, elapsed = 85_000 = totales configurados; misma vista en 400 s y 604_800 s) |
+| Paused sessions do not consume time while suspended | "pausada 2 min suspendida →… exactamente 20 s" (+edge estructural: pausa en el anclaje exacto acumula 0) |
+| Full-session drift is imperceptible | "deriva imperceptible" (transiciones observadas EXACTAMENTE en [10_000, 40_000, 55_000, 85_000]; elapsed al completar == totalActiveMs) |
+| — (§3.4) | displaySeconds: valor completo a la entrada (30), 0 exactamente en la frontera; integración a la sesión de 85 s |
+
+(Stop y "No cues are owed during suspension"/music/copy son de U7/U11/U13 según la matriz de cobertura.)
+
+### Deviations / decisions
+
+- `createFakeClock` vive en `clock.ts` de producción (mandato explícito del tasks.md U4) y no en `src/test/fakes.ts` (§11.1 decía que FakeClock aterrizaría ahí): la nota de U1 ya anticipaba que fakes.ts aterriza con la unidad que lo necesite; el tasks artifact es la autoridad del contenido de U4. Los demás fakes (`stubAudioContext`, stubs de navigator) siguen planificados en `src/test/fakes.ts` (U10/U13).
+- Los tests TRIANGULATE pasaron al primer run tras GREEN (uniformidad estructural del motor — la afirmación central del diseño §3.3); para que la evidencia TDD no sea una tautología se ejecutó un **chequeo de mutación** documentado arriba (5 fallos con `>=`→`>` y `ceil`→`floor`, revertido).
+- `Clock` se re-exporta desde `clock.ts` (`export type { Clock }` con fuente única en `types.ts`); evita duplicar la definición pidiéndola también en clock.ts (el prompt del parentId la mencionaba en ambos).
+- `compilePlan` NO se re-exporta desde engine.ts: plan.ts sigue siendo su único hogar (§3.2); consumidores importan directo.
+
+### Remaining tasks
+
+U5–U13 sin marcar (46 tareas). Next unit: **U5 — Config screens: Clásico / Tabata — PR 5** (primer sin marcar: `- [ ] RED: src/components/forms/ClasicoConfigScreen.test.tsx`).
+
+### Workload / PR boundary
+
+- PR 4 = U4 only, branch `u4-timer-engine` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Authored lines ≈ 660 (implementación 253: engine 156 + clock 42 + purity 8 + artifacts; tests 406: engine.test 353 + purity entries). Por encima del presupuesto de 400: los tests son 61% del diff y son la matriz HARD GATE mandatoria del spec (7 scenarios literales + guardas + deriva); no hay forma honesta de recortar sin perder cobertura del HARD GATE. El riesgo "High" ya estaba previsto en el forecast por-unit y la ruta auto-chain está resuelta; se reporta para el chequeo de tamaño del orquestador (`size:exception` disponible si el reviewer quiere dividir, aunque separar el motor de su matriz de verificación rompería la co-localización).
+
+### Structured status consumed
+
+- `applyState: ready` (20/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.

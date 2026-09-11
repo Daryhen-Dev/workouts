@@ -6,9 +6,13 @@ import { describe, expect, it } from "vitest";
 // navegador (tampoco en configSchemas, que solo importa zod + tipos). Este
 // guardián captura ese contrato para que ninguna unidad posterior lo rompa
 // silenciosamente (mismo enfoque de lectura de disco que globals.test.ts).
+// U4 añade engine.ts/clock.ts: Date.now es ECMAScript estándar, no una API
+// de navegador — permitido por diseño §3.3.
 const PURE_MODULES: string[] = [
   "src/lib/timer/types.ts",
   "src/lib/timer/plan.ts",
+  "src/lib/timer/engine.ts",
+  "src/lib/timer/clock.ts",
   "src/lib/validation/configSchemas.ts",
 ];
 
