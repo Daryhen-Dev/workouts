@@ -515,3 +515,11 @@ U8–U13 sin marcar (31 tareas). Next unit: **U8 — Completion + history — PR
 ### Structured status consumed
 
 - `applyState: ready` (34/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
+
+## U8 — Completion + history (PR 8)
+
+**Status: COMPLETE** (implementation by phase agent; orchestrator finished the cycle after the agent process errored post-implementation, pre-commit).
+
+- Work found staged and green on inspection: 277/277 tests (25 files; +62 vs U7 baseline: query/filters/stats, persisted round-trip + corrupt-JSON defaults, completion wiring exactly-once, CompletionSummary 85s-active vs 115s-wall, HistoryScreen composing filters + Spanish labels).
+- Orchestrator fixes before delivery: 3 zustand-persist generic errors in `persisted.test.ts` (explicit `<S, T>` at call sites — `S` is not inferable from args) + 1 unused-var lint (`set` → `_set` in a no-op creator). tasks.md U8 lines verified satisfied and checked (TRIANGULATE via test content inspection; REFACTOR via import graph).
+- Evidence: `pnpm test` 25 files / 277 tests passed; `pnpm lint` clean; `tsc --noEmit` exit 0.

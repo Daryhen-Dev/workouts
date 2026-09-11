@@ -9,8 +9,14 @@
 // está en el motor; aquí solo hay suscripciones y efectos secundarios.
 
 import { useEffect, useRef, useState } from "react";
+import { buildHistoryEntry } from "@/lib/history/entry";
+import type { HistoryEntry } from "@/lib/history/types";
 import { SESSION_STATUS } from "@/lib/timer/types";
-import { useSessionStore } from "@/stores/sessionStore";
+import { addHistoryEntry } from "@/stores/historyStore";
+import {
+  useSessionStore,
+  type SessionCompletionData,
+} from "@/stores/sessionStore";
 
 /** Cadencia del ticker cosmético (§3.5). Nunca autoritativo: la verdad es computeView. */
 export const TICKER_INTERVAL_MS = 250;
@@ -69,9 +75,9 @@ export function usePhaseFlash(
 /**
  * Observador de completado — dispara el seam EXACTAMENTE UNA vez por sesión,
  * sobre la TRANSICIÓN de status a completed (a través de re-renders y refreshes
- * posteriores). U8 cablea `setOnComplete` con historyStore.addEntry + /resumen;
- * los datos son del motor: config + elapsedActiveMs de la vista completada
- * (= totalActiveMs configurado, contrato engine U4).
+ * posteriores). U8 lo cablea a historyStore.addEntry + /resumen vía
+ * useCompletionWiring; los datos son del motor: config + elapsedActiveMs de la
+ * vista completada (= totalActiveMs configurado, contrato engine U4).
  */
 export function useCompletionObserver(): void {
   const view = useSessionStore((s) => s.view);
@@ -98,6 +104,34 @@ export function useCompletionObserver(): void {
 export interface SessionControllerApi {
   /** true mientras dura el destello de transición de fase. */
   flash: boolean;
+}
+
+/**
+ * Cableado de completado (U8): registra en el seam U7 el callback real —
+ * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
+ * por modo), la añade al historial y navega a /resumen. El handler se registra
+ * UNA vez con identidad estable (latest-ref para la navegación): re-registrar
+ * en cada render provocaría un bucle set→render→efecto sobre el store.
+ */
+export function useCompletionWiring(
+  navigateOnComplete: (to: "/resumen") => void,
+): void {
+  const setOnComplete = useSessionStore((s) => s.setOnComplete);
+  const navigateRef = useRef(navigateOnComplete);
+
+  useEffect(() => {
+    navigateRef.current = navigateOnComplete;
+  });
+
+  useEffect(() => {
+    const onComplete = (data: SessionCompletionData): void => {
+      const entry: HistoryEntry = buildHistoryEntry(data);
+      addHistoryEntry(entry);
+      navigateRef.current("/resumen");
+    };
+    setOnComplete(onComplete);
+    return () => setOnComplete(null);
+  }, [setOnComplete]);
 }
 
 /** Composición de todos los observadores de la sesión activa (§3.5). */
