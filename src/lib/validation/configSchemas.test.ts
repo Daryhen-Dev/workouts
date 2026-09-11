@@ -13,12 +13,18 @@ import { MODE } from "@/lib/timer/types";
 // Helpers: devuelve el mensaje del primer issue de la ruta dada, o undefined.
 // (zod 4 tipa `issue.path` como PropertyKey[] — se compara elemento a elemento.)
 function firstMessageAt(
-  result: { success: boolean; error?: { issues: readonly { path: readonly PropertyKey[]; message: string }[] } },
+  result: {
+    success: boolean;
+    error?: {
+      issues: readonly { path: readonly PropertyKey[]; message: string }[];
+    };
+  },
   path: (string | number)[],
 ): string | undefined {
-  const issue = result.error?.issues.find((i) =>
-    i.path.length === path.length &&
-    i.path.every((segment, i) => String(segment) === String(path[i])),
+  const issue = result.error?.issues.find(
+    (i) =>
+      i.path.length === path.length &&
+      i.path.every((segment, i) => String(segment) === String(path[i])),
   );
   return issue?.message;
 }
@@ -54,17 +60,25 @@ describe("configSchemas — Clásico", () => {
   });
 
   it("rechaza rondas 0 y 51 con los límites documentados", () => {
-    expect(clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 0 }).success).toBe(false);
-    expect(clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 51 }).success).toBe(false);
-    expect(clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 50 }).success).toBe(true);
+    expect(
+      clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 0 }).success,
+    ).toBe(false);
+    expect(
+      clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 51 }).success,
+    ).toBe(false);
+    expect(
+      clasicoValuesSchema.safeParse({ ...clasicoValido, rondas: 50 }).success,
+    ).toBe(true);
   });
 
   it("rechaza duraciones por encima del límite (3600 s)", () => {
     expect(
-      clasicoValuesSchema.safeParse({ ...clasicoValido, descansoS: 3601 }).success,
+      clasicoValuesSchema.safeParse({ ...clasicoValido, descansoS: 3601 })
+        .success,
     ).toBe(false);
     expect(
-      clasicoValuesSchema.safeParse({ ...clasicoValido, descansoS: 3600 }).success,
+      clasicoValuesSchema.safeParse({ ...clasicoValido, descansoS: 3600 })
+        .success,
     ).toBe(true);
   });
 
@@ -78,10 +92,16 @@ describe("configSchemas — Clásico", () => {
 
   it("el schema de config discrimina por mode y envuelve los values", () => {
     expect(
-      clasicoConfigSchema.safeParse({ mode: MODE.clasico, values: clasicoValido }).success,
+      clasicoConfigSchema.safeParse({
+        mode: MODE.clasico,
+        values: clasicoValido,
+      }).success,
     ).toBe(true);
     expect(
-      clasicoConfigSchema.safeParse({ mode: MODE.tabata, values: clasicoValido }).success,
+      clasicoConfigSchema.safeParse({
+        mode: MODE.tabata,
+        values: clasicoValido,
+      }).success,
     ).toBe(false);
   });
 });
@@ -114,10 +134,12 @@ describe("configSchemas — Tabata", () => {
 
   it("el schema de config discrimina mode tabata", () => {
     expect(
-      tabataConfigSchema.safeParse({ mode: MODE.tabata, values: tabataValido }).success,
+      tabataConfigSchema.safeParse({ mode: MODE.tabata, values: tabataValido })
+        .success,
     ).toBe(true);
     expect(
-      tabataConfigSchema.safeParse({ mode: MODE.clasico, values: tabataValido }).success,
+      tabataConfigSchema.safeParse({ mode: MODE.clasico, values: tabataValido })
+        .success,
     ).toBe(false);
   });
 });
@@ -160,10 +182,14 @@ describe("configSchemas — Personalizado", () => {
   it("rechaza un bloque con values inválidos con la ruta del issue", () => {
     const result = personalizadoValuesSchema.safeParse({
       descansoGlobalS: 20,
-      blocks: [{ ...bloqueClasico, values: { ...bloqueClasico.values, trabajoS: 0 } }],
+      blocks: [
+        { ...bloqueClasico, values: { ...bloqueClasico.values, trabajoS: 0 } },
+      ],
     });
     expect(result.success).toBe(false);
-    expect(firstMessageAt(result, ["blocks", 0, "values", "trabajoS"])).toMatch(/trabajo/iu);
+    expect(firstMessageAt(result, ["blocks", 0, "values", "trabajoS"])).toMatch(
+      /trabajo/iu,
+    );
   });
 
   it("el schema de config discrimina mode personalizado", () => {
@@ -180,10 +206,14 @@ describe("configSchemas — Personalizado", () => {
 describe("configSchemas — union de sesión", () => {
   it("acepta las tres configs válidas bajo sessionConfigSchema", () => {
     expect(
-      sessionConfigSchema.safeParse({ mode: MODE.clasico, values: clasicoValido }).success,
+      sessionConfigSchema.safeParse({
+        mode: MODE.clasico,
+        values: clasicoValido,
+      }).success,
     ).toBe(true);
     expect(
-      sessionConfigSchema.safeParse({ mode: MODE.tabata, values: tabataValido }).success,
+      sessionConfigSchema.safeParse({ mode: MODE.tabata, values: tabataValido })
+        .success,
     ).toBe(true);
     expect(
       sessionConfigSchema.safeParse({
@@ -196,7 +226,8 @@ describe("configSchemas — union de sesión", () => {
 
   it("rechaza un mode desconocido", () => {
     expect(
-      sessionConfigSchema.safeParse({ mode: "hiit", values: clasicoValido }).success,
+      sessionConfigSchema.safeParse({ mode: "hiit", values: clasicoValido })
+        .success,
     ).toBe(false);
   });
 });

@@ -61,10 +61,7 @@ export interface PersonalizadoConfig {
   blocks: BlockDef[];
 }
 
-export type SessionConfig =
-  | ClasicoConfig
-  | TabataConfig
-  | PersonalizadoConfig;
+export type SessionConfig = ClasicoConfig | TabataConfig | PersonalizadoConfig;
 
 export interface ScheduledPhase {
   /** 0..n-1, posición en el plan compilado. */
@@ -85,7 +82,8 @@ export const SESSION_STATUS = {
   paused: "paused",
   completed: "completed",
 } as const;
-export type SessionStatus = (typeof SESSION_STATUS)[keyof typeof SESSION_STATUS];
+export type SessionStatus =
+  (typeof SESSION_STATUS)[keyof typeof SESSION_STATUS];
 
 // ——— Tipos del motor (U4 es dueño de engine.ts/clock.ts; estas interfaces
 // son parte del contrato §3.1 y no tienen lógica propia). ———

@@ -63,9 +63,9 @@ describe("compilePlan — Clásico", () => {
       ["preparacion", 10_000, 0, "Preparación"],
       ["trabajo", 30_000, 10_000, "Trabajo"],
     ] satisfies PhaseRow[]);
-    expect(
-      plan.some((phase) => phase.kind === PHASE_KIND.descanso),
-    ).toBe(false);
+    expect(plan.some((phase) => phase.kind === PHASE_KIND.descanso)).toBe(
+      false,
+    );
   });
 });
 
@@ -139,9 +139,9 @@ describe("compilePlan — Tabata", () => {
       "descanso",
       "trabajo",
     ]);
-    expect(
-      plan.some((phase) => phase.kind === PHASE_KIND.descansoLargo),
-    ).toBe(false);
+    expect(plan.some((phase) => phase.kind === PHASE_KIND.descansoLargo)).toBe(
+      false,
+    );
   });
 });
 
