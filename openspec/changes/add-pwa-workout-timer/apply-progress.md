@@ -108,3 +108,59 @@ All U2–U13 tasks remain unchecked — next unit: **U2 — Tokens + shell — P
   `[workspace]` — no warnings; all edits within the workspace root.
 - Artifact store: openspec — tasks/spec/design read from
   `openspec/changes/add-pwa-workout-timer/` before work.
+
+---
+
+## U2 — Tokens + shell (PR 2)
+
+**Branch**: `u2-tokens-shell` (from `main` @ 9f87604). Strict TDD active (`pnpm test` = vitest run).
+
+### Completed tasks (tasks.md checkboxes updated 6/6 U2 → `- [x]`)
+
+RED (2), GREEN (2), TRIANGULATE (1), REFACTOR (1) — all U2 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED-1 | `src/components/layout/AppShell.test.tsx` | `Failed to resolve import "./AppShell"` (module absent) | 11/11 pass (brand, 4 tabs+hrefs, active highlight, `color-scheme: dark`, no switcher, `/sesion` hides nav, `showNavFor` ×5, `isActivePath` ×5) |
+| RED-2 | `src/components/shared/StoreHydrationGate.test.tsx` | `Failed to resolve import "./StoreHydrationGate"` | 4/4 pass (skeleton→children, waits ALL rehydrators, no-rehydrator instant, fail-open on rejection) |
+| Token gate | `src/app/globals.test.ts` | 41 failed (`expected '' to contain '--color-base: #1a1218'`) | 41/41 pass (17 Gentleman tokens, 20 shadcn aliases, fonts chain w/ Iosevka Term, 3 radii, `@theme inline` mapping, `color-scheme: dark`) |
+| TRIANGULATE | `src/components/shared/copy.test.ts` | 3 failed (`MODE_LABEL` undefined) | 5/5 pass (verbatim Clásico/Tabata/Personalizado, tildes, background-promise allowlist scan over all exported copy, BRAND/NAV_LABELS centralized) |
+| REFACTOR | boundary audit (no new tests by design) | — | `grep -rl "use client" src/` → exactly `NavBar.tsx` + `StoreHydrationGate.tsx`; all page/layout/AppShell shells are server components |
+
+### Files changed
+
+- `src/app/globals.css` — full Gentleman `@theme` (§9.1 hexes verbatim), `:root { color-scheme: dark }` + shadcn semantic aliases, `@theme inline` utility mapping (note: `--color-accent` stays the pink; shadcn's `--accent: #342230` documented as plain var).
+- `src/app/layout.tsx` — `<html lang="es">`, Inter + JetBrains_Mono via `next/font/google` (`--font-inter`/`--font-jetbrains`), AppShell + StoreHydrationGate composition.
+- `src/components/layout/AppShell.tsx` (server shell), `NavBar.tsx` (client: HeaderBar desktop collapse + mobile bottom tab bar, lucide icons, accent active highlight, `/sesion` opt-out), `nav.ts` (pure `NAV_ITEMS`/`showNavFor`/`isActivePath`).
+- `src/components/shared/StoreHydrationGate.tsx` (client gate + `useHydrated`, fail-open), `copy.ts` (BRAND, NAV_LABELS, MODE_LABEL verbatim), `storeRehydrators.ts` registry (stores land U8/U9/U11 — functions can't cross the server→client prop boundary, so the registry is client-side by design).
+- `src/components/ui/skeleton.tsx` + `src/lib/utils.ts` (cn) — shadcn skeleton, hand-authored per the pre-authorized fallback (U1 recorded the alpha CLI init failure); tinted `bg-surface-1`.
+- `components.json` (hand-written, CLI-valid for later `shadcn add`), placeholders `src/app/{rutinas,historial,ajustes}/page.tsx` (Spanish; replaced by U8/U9/U11), `src/types/css.d.ts` unchanged (reverted — `?raw` unused).
+- Deps: `clsx` + `tailwind-merge` (shadcn prerequisites; every generated component needs them).
+- Tests: `AppShell.test.tsx`, `StoreHydrationGate.test.tsx`, `globals.test.ts`, `copy.test.ts`.
+
+### Test commands run
+
+- `pnpm test` → **Test Files 5 passed (5), Tests 60 passed (60)**.
+- `pnpm lint` → clean.
+- `pnpm build` → green: 5 static routes (`/`, `/_not-found`, `/ajustes`, `/historial`, `/rutinas`); next/font self-hosted fonts fetched at build (offline-safe per §9.1).
+
+### Deviations from design
+
+- **shadcn CLI init skipped** (pre-authorized fallback): U1 already recorded the alpha CLI breaking `init`; U2 hand-wrote `components.json` + the one consumed component (`skeleton`) per "generated code lands with its consumer" (U1 tasks note). Button/card/separator etc. land with their consumers in U5+.
+- Token tests read `globals.css` from disk via `node:fs` instead of `?raw`: vitest's default CSS stubbing returns `''` for `?raw` imports (verified in RED run), and jsdom rewrites `import.meta.url` to a non-file scheme. Disk read is deterministic and asserts the shipped file verbatim.
+- `usePathname()` before early-returns in NavBar (hooks rule); no `useChromeVisible` wrapper.
+
+### Remaining tasks
+
+U3–U13 all unchecked (62 tasks). Next unit: **U3 — Timer core I: types + plan compiler — PR 3** (first unchecked: `- [ ] RED: src/lib/timer/plan.test.ts`).
+
+### Workload / PR boundary
+
+- PR 2 = U2 only, branch `u2-tokens-shell` → `main` (stacked-to-main chain, user-confirmed).
+- Authored lines ≈ 545 (incl. tests + artifacts); raw diff also carries `package.json`/lockfile churn from clsx + tailwind-merge. Within the 800-line attempt budget; scaffold-diff acceptance applies to `components.json`/skeleton.
+
+### Structured status consumed
+
+- `applyState: ready` (9/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace]`, no warnings. Attempt token authority: u2-1789115404-27053 (never written to any repo file).

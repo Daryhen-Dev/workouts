@@ -74,12 +74,12 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: `src/app/globals.css` (@theme + shadcn aliases), `src/app/layout.tsx`, fonts, `src/components/layout/AppShell.tsx` + `NavBar.tsx`, `src/components/shared/StoreHydrationGate.tsx`, `src/components/shared/copy.ts`.
 **Acceptance hooks**: ui-design — "Tokens drive the theme", "Single skin, no switcher"; copy foundation for the "Copy audit" scenario.
 
-- [ ] RED: `src/components/layout/AppShell.test.tsx` — brand "Tip Tap Workout" renders, bottom tabs Inicio/Rutinas/Historial/Ajustes render, `color-scheme: dark` is declared, and no theme/skin switcher control exists anywhere. <!-- sdd-owner: implementation -->
-- [ ] RED: `src/components/shared/StoreHydrationGate.test.tsx` — skeleton renders until a dummy persisted store reports hydrated, then children render. <!-- sdd-owner: implementation -->
-- [ ] GREEN: `globals.css` with the exact Gentleman `@theme` tokens and shadcn semantic aliases from design §9.1 (`--color-base: #1a1218`, accent `#f095c8`, radii, dark-only) plus `:root { color-scheme: dark }`; fonts via `next/font/google` Inter + JetBrains_Mono (Iosevka Term as local fallback only). <!-- sdd-owner: implementation -->
-- [ ] GREEN: server `layout.tsx` (`<html lang="es">`, fonts, AppShell, hydration gate) + `AppShell`/`NavBar` (mobile bottom tab bar collapsing into the header on wide screens; `/sesion` chrome-minimal opt-out) + client `StoreHydrationGate` calling `persist.rehydrate()` in an effect. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: `copy.ts` with `MODE_LABEL` mapping ids → verbatim Spanish names (Clásico, Tabata, Personalizado) and centralized Spanish copy constants; copy spot-check test asserts verbatim mode names and a background-promise string allowlist extended by later units. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: enforce the §2.3 server/client boundary — shells stay server components; interactivity lives in single client entry components. <!-- sdd-owner: implementation -->
+- [x] RED: `src/components/layout/AppShell.test.tsx` — brand "Tip Tap Workout" renders, bottom tabs Inicio/Rutinas/Historial/Ajustes render, `color-scheme: dark` is declared, and no theme/skin switcher control exists anywhere. <!-- sdd-owner: implementation -->
+- [x] RED: `src/components/shared/StoreHydrationGate.test.tsx` — skeleton renders until a dummy persisted store reports hydrated, then children render. <!-- sdd-owner: implementation -->
+- [x] GREEN: `globals.css` with the exact Gentleman `@theme` tokens and shadcn semantic aliases from design §9.1 (`--color-base: #1a1218`, accent `#f095c8`, radii, dark-only) plus `:root { color-scheme: dark }`; fonts via `next/font/google` Inter + JetBrains_Mono (Iosevka Term as local fallback only). <!-- sdd-owner: implementation -->
+- [x] GREEN: server `layout.tsx` (`<html lang="es">`, fonts, AppShell, hydration gate) + `AppShell`/`NavBar` (mobile bottom tab bar collapsing into the header on wide screens; `/sesion` chrome-minimal opt-out) + client `StoreHydrationGate` calling `persist.rehydrate()` in an effect. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: `copy.ts` with `MODE_LABEL` mapping ids → verbatim Spanish names (Clásico, Tabata, Personalizado) and centralized Spanish copy constants; copy spot-check test asserts verbatim mode names and a background-promise string allowlist extended by later units. <!-- sdd-owner: implementation -->
+- [x] REFACTOR: enforce the §2.3 server/client boundary — shells stay server components; interactivity lives in single client entry components. <!-- sdd-owner: implementation -->
 
 ## U3 — Timer core I: types + plan compiler — PR 3
 
