@@ -320,7 +320,9 @@ describe("guardas de transición de estado (contrato documentado)", () => {
 
     expect(pauseSession(completed, 999_999)).toBe(completed);
     expect(resumeSession(completed, 999_999)).toBe(completed);
-    expect(computeView(completed, 999_999).status).toBe(SESSION_STATUS.completed);
+    expect(computeView(completed, 999_999).status).toBe(
+      SESSION_STATUS.completed,
+    );
   });
 
   it("pausar en el instante exacto del anclaje no añade deriva (acumulado +0)", () => {
