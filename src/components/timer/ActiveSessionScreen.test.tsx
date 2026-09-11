@@ -4,7 +4,12 @@
 // (relój FakeClock inyectado); la pantalla es pura presentación + acciones.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createFakeClock, systemClock, type Clock, type FakeClock } from "@/lib/timer/clock";
+import {
+  createFakeClock,
+  systemClock,
+  type Clock,
+  type FakeClock,
+} from "@/lib/timer/clock";
 import { SESSION_STATUS, type SessionConfig } from "@/lib/timer/types";
 import { useSessionStore } from "@/stores/sessionStore";
 
@@ -42,7 +47,9 @@ beforeEach(() => {
 describe("ActiveSessionScreen — render del temporizador (spec timer-correctness)", () => {
   it("muestra la etiqueta de la fase, la cuenta atrás y el siguiente al entrar", () => {
     mount(createFakeClock(0));
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Preparación");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Preparación",
+    );
     expect(screen.getByText("0:10")).toBeInTheDocument();
     expect(screen.getByText("Siguiente: Trabajo")).toBeInTheDocument();
   });
@@ -61,13 +68,19 @@ describe("ActiveSessionScreen — render del temporizador (spec timer-correctnes
     const clock = createFakeClock(0);
     mount(clock);
     // Entrada de fase: 0 % recorrido.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
     act(() => {
       clock.advance(5_000);
       useSessionStore.getState().refreshView();
     });
     // 5 s de 10 s de preparación → 50 %.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "50",
+    );
   });
 
   it("cambia de fase con su etiqueta y expone el kind (color por fase §9.1)", () => {
@@ -77,11 +90,17 @@ describe("ActiveSessionScreen — render del temporizador (spec timer-correctnes
       clock.advance(10_000);
       useSessionStore.getState().refreshView();
     });
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trabajo");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Trabajo",
+    );
     expect(screen.getByText("0:30")).toBeInTheDocument();
     expect(screen.getByText("Siguiente: Descanso")).toBeInTheDocument();
     // El kind de fase viaja como atributo semántico (trabajo → acento rosa §9.1).
-    expect(document.querySelector("[data-phase-kind]")!.getAttribute("data-phase-kind")).toBe("trabajo");
+    expect(
+      document
+        .querySelector("[data-phase-kind]")!
+        .getAttribute("data-phase-kind"),
+    ).toBe("trabajo");
   });
 
   it("la última fase muestra «Última fase» y no promete más fases", () => {
@@ -101,14 +120,18 @@ describe("ActiveSessionScreen — controles (spec Session Controls)", () => {
     mount(clock);
     fireEvent.click(screen.getByRole("button", { name: "Pausar" }));
 
-    expect(screen.getByRole("button", { name: "Reanudar" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reanudar" }),
+    ).toBeInTheDocument();
     // Congelada: el reloj avanza 60 s y la pantalla no cambia.
     act(() => {
       clock.advance(60_000);
       useSessionStore.getState().refreshView();
     });
     expect(screen.getByText("0:10")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Preparación");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Preparación",
+    );
   });
 
   it("Reanudar continúa la misma fase desde el restante congelado", () => {
@@ -123,7 +146,9 @@ describe("ActiveSessionScreen — controles (spec Session Controls)", () => {
       clock.advance(10_000); // 10 s activos desde el reanudo → cruzó a trabajo
       useSessionStore.getState().refreshView();
     });
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trabajo");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Trabajo",
+    );
     expect(screen.getByText("0:30")).toBeInTheDocument();
   });
 
@@ -143,9 +168,15 @@ describe("ActiveSessionScreen — estado completado (hasta que U8 navega al resu
       clock.advance(85_000);
       useSessionStore.getState().refreshView();
     });
-    expect(useSessionStore.getState().view!.status).toBe(SESSION_STATUS.completed);
+    expect(useSessionStore.getState().view!.status).toBe(
+      SESSION_STATUS.completed,
+    );
     expect(screen.getByText("Sesión completada")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Pausar" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Detener" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Pausar" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Detener" }),
+    ).not.toBeInTheDocument();
   });
 });

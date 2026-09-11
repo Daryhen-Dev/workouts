@@ -3,7 +3,12 @@
 // guarda de ruta y flujo de descarte con confirmación.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createFakeClock, systemClock, type Clock, type FakeClock } from "@/lib/timer/clock";
+import {
+  createFakeClock,
+  systemClock,
+  type Clock,
+  type FakeClock,
+} from "@/lib/timer/clock";
 import { SESSION_STATUS, type SessionConfig } from "@/lib/timer/types";
 import { useSessionStore } from "@/stores/sessionStore";
 
@@ -204,7 +209,9 @@ describe("SessionController — observador de completado (exactamente una vez)",
       clock.advance(100_000);
       setVisibility("visible");
     });
-    expect(useSessionStore.getState().view!.status).toBe(SESSION_STATUS.completed);
+    expect(useSessionStore.getState().view!.status).toBe(
+      SESSION_STATUS.completed,
+    );
 
     expect(onComplete).toHaveBeenCalledTimes(1);
     expect(onComplete).toHaveBeenCalledWith({
@@ -251,9 +258,7 @@ describe("SessionController — Detener con confirmación (spec workout-completi
     fireEvent.click(screen.getByRole("button", { name: "Detener" }));
 
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(
-      screen.getByText("¿Descartar la sesión?"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("¿Descartar la sesión?")).toBeInTheDocument();
     // Aún no descartada: la sesión sigue viva.
     expect(useSessionStore.getState().state).not.toBeNull();
     expect(mocks.replace).not.toHaveBeenCalled();
@@ -284,7 +289,9 @@ describe("SessionController — Detener con confirmación (spec workout-completi
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(useSessionStore.getState().state).not.toBeNull();
     expect(mocks.replace).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Preparación");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Preparación",
+    );
   });
 
   it("detener en pausa sigue el mismo camino de descarte (spec: stop while paused)", () => {
@@ -322,7 +329,9 @@ describe("SessionController — HARD GATE en nivel de componente (relój FakeClo
       setVisibility("visible");
     });
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trabajo");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Trabajo",
+    );
     expect(screen.getByText("0:15")).toBeInTheDocument();
   });
 
@@ -361,7 +370,9 @@ describe("SessionController — HARD GATE en nivel de componente (relój FakeClo
 
     // Horario: prep[0,10) t1[10,30) d[30,40) t2[40,60) largo[60,120) t3[120,140) d[140,150) t4[150,170)
     // 145 s activos → descanso (índice 6) con 5 s restantes.
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Descanso");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Descanso",
+    );
     expect(screen.getByText("0:05")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pausar" })).toBeInTheDocument(); // sigue corriendo
   });
@@ -373,16 +384,22 @@ describe("SessionController — HARD GATE en nivel de componente (relój FakeClo
       clock.advance(20_000); // trabajo, 20 s restantes
       useSessionStore.getState().pause();
     });
-    expect(screen.getByRole("button", { name: "Reanudar" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reanudar" }),
+    ).toBeInTheDocument();
 
     act(() => {
       clock.advance(120_000); // suspendida EN PAUSA — no consume
       setVisibility("visible");
     });
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Trabajo");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Trabajo",
+    );
     expect(screen.getByText("0:20")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reanudar" })).toBeInTheDocument(); // aún pausada
+    expect(
+      screen.getByRole("button", { name: "Reanudar" }),
+    ).toBeInTheDocument(); // aún pausada
   });
 });
 
@@ -392,7 +409,9 @@ describe("/sesion — shell chrome-minimal y copy honesto", () => {
     act(() => useSessionStore.getState().start(CLASICO_85, asClock(clock)));
     render(<SesionPage />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Preparación");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Preparación",
+    );
     expect(screen.getByRole("button", { name: "Detener" })).toBeInTheDocument();
     // chrome-minimal §2.4: sin barra de navegación — el ocultado de NavBar para
     // /sesion está garantizado por showNavFor (testado en AppShell.test.tsx U2).
@@ -411,7 +430,9 @@ describe("/sesion — shell chrome-minimal y copy honesto", () => {
       /aunque (cierres|salgas|bloquees)/i,
       /sigue (corriendo|sonando|contando)/i,
     ]) {
-      expect(texto, `copy prohibido en pantalla: «${texto}»`).not.toMatch(patron);
+      expect(texto, `copy prohibido en pantalla: «${texto}»`).not.toMatch(
+        patron,
+      );
     }
   });
 });

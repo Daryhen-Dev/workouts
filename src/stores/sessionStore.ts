@@ -30,7 +30,11 @@ import {
   resumeSession,
   startSession,
 } from "@/lib/timer/engine";
-import type { SessionConfig, SessionState, SessionView } from "@/lib/timer/types";
+import type {
+  SessionConfig,
+  SessionState,
+  SessionView,
+} from "@/lib/timer/types";
 
 /** Datos del motor que el seam entrega a U8 en la completación natural. */
 export interface SessionCompletionData {

@@ -36,15 +36,11 @@ export function useIntervalDriver(active: boolean, tick: () => void): void {
  * visibilitychange → recomputación inmediata (HARD GATE al retorno). Se refresca
  * en ambas direcciones: recomputar es barato y correcto en cualquier estado.
  */
-export function useVisibilityChange(
-  handler: (visible: boolean) => void,
-): void {
+export function useVisibilityChange(handler: (visible: boolean) => void): void {
   useEffect(() => {
-    const onVisibility = () =>
-      handler(document.visibilityState === "visible");
+    const onVisibility = () => handler(document.visibilityState === "visible");
     document.addEventListener("visibilitychange", onVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [handler]);
 }
 
@@ -111,8 +107,7 @@ export function useSessionController(): SessionControllerApi {
   const refreshView = useSessionStore((s) => s.refreshView);
   const [visible, setVisible] = useState(
     () =>
-      typeof document === "undefined" ||
-      document.visibilityState === "visible",
+      typeof document === "undefined" || document.visibilityState === "visible",
   );
 
   useVisibilityChange((nowVisible) => {

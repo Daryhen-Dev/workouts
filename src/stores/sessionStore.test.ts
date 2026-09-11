@@ -3,7 +3,12 @@
 // afirman el mapeo 1:1 con las funciones del motor y que NO hay persistencia
 // (diseño §4.1: sessionStore es efímero).
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createFakeClock, systemClock, type Clock, type FakeClock } from "@/lib/timer/clock";
+import {
+  createFakeClock,
+  systemClock,
+  type Clock,
+  type FakeClock,
+} from "@/lib/timer/clock";
 import {
   computeView,
   pauseSession,
@@ -12,10 +17,7 @@ import {
 } from "@/lib/timer/engine";
 import { SESSION_STATUS, type SessionConfig } from "@/lib/timer/types";
 
-import {
-  useSessionStore,
-  type SessionCompletionData,
-} from "./sessionStore";
+import { useSessionStore, type SessionCompletionData } from "./sessionStore";
 
 /** FakeClock es un objeto con now/advance/set; el store pide `Clock` (función). */
 function asClock(fake: FakeClock): Clock {
@@ -72,10 +74,15 @@ describe("sessionStore — start mapea 1:1 al motor con reloj inyectado", () => 
     const clock = createFakeClock(0);
     useSessionStore.getState().start(CLASICO_85, asClock(clock));
     clock.advance(5_000);
-    useSessionStore.getState().start(
-      { mode: "clasico", values: { preparacionS: 5, trabajoS: 20, descansoS: 10, rondas: 1 } },
-      asClock(clock),
-    );
+    useSessionStore
+      .getState()
+      .start(
+        {
+          mode: "clasico",
+          values: { preparacionS: 5, trabajoS: 20, descansoS: 10, rondas: 1 },
+        },
+        asClock(clock),
+      );
     const { state } = useSessionStore.getState();
     expect(state!.totalActiveMs).toBe(25_000); // 5+20 — plan nuevo, no el anterior
   });
