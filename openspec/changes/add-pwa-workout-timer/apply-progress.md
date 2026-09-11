@@ -370,3 +370,73 @@ U6–U13 sin marcar (41 tareas). Next unit: **U6 — Personalizado builder — P
 ### Structured status consumed
 
 - `applyState: ready` (25/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
+
+---
+
+## U6 — Personalizado builder (PR 6)
+
+**Branch**: `u6-builder` (from `main` @ 29707a1). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u6-1789133346-28569 (never written to any repo file).
+
+### Completed tasks (tasks.md checkboxes updated 4/4 U6 → `- [x]`)
+
+RED (1), GREEN (1), TRIANGULATE (1), REFACTOR (1) — all U6 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED (todo el archivo, 14 tests) | `src/components/builder/PersonalizadoBuilder.test.tsx` | `Error: Failed to resolve import "./PersonalizadoBuilder"` — Test Files 1 failed, no tests ran (módulos inexistentes = RED genuino para los 4 ciclos) | 14/14 pass |
+| GREEN (fix intermedio honesto) | mismo archivo | tras el primer GREEN: 13/14 — React crash «Objects are not valid as a React child {type, message}»: `fieldErrorsByIndex` entregaba objetos de error donde DurationField espera strings | extracción de `.message` por campo → 14/14 |
+| GREEN (tipado) | — | TS: `BlockFormValues[]` ≠ `BlockDef[]` (rondas vestigial opcional) → cast único documentado en el límite de render | `tsc --noEmit` exit 0 |
+| TRIANGULATE | incluido en el archivo RED (reorden→compilePlan, descanso global 0, config exacta, shell de ruta) | (mismo run RED) | `Subir bloque 2` + Iniciar ⇒ `compilePlan(config)` primer trabajo = 45 s «Bloque 1 · Trabajo»; descanso global 0 ⇒ mensaje español y sin start; config exacta con `rondas: 2` vestigial fijado; `/personalizado` renderiza h1 + constructor |
+| REFACTOR | auditoría de composición (grep) | — | solo `PersonalizadoBuilder` importa react-hook-form (los 4 hijos son presentacionales con callbacks); `BlockCard` reutiliza `DurationField`/`ValidatedNumberInput` (10 usos); `page.tsx` queda servidor (grep `use client`: 12 archivos, ninguno es `src/app/personalizado/page.tsx`) |
+
+Safety net: baseline `pnpm test` en `main` antes de editar → **162/162** (15 archivos). Sin fallos preexistentes.
+
+Verificación final en la rama: `pnpm test` → **Test Files 16 passed (16), Tests 176 passed (176)** · `pnpm lint` limpio · `pnpm exec tsc --noEmit` exit 0 · `pnpm build` verde (10 rutas estáticas, +`/personalizado` 2.63 kB).
+
+### Files changed
+
+- `src/app/personalizado/page.tsx` — shell servidor: h1 verbatim «Personalizado», descripción, metadata; completa «All modes reachable» (HomeScreen ya enlazaba la ruta desde U5).
+- `src/components/builder/PersonalizadoBuilder.tsx` — única entrada cliente de la ruta: RHF + `zodResolver` sobre `personalizadoValuesSchema`; operaciones estructurales (añadir/quitar/reordenar) reescriben `blocks` vía `setValue` con ids estables; resumen vivo `compilePlan` + `totalPlanMs`; «Iniciar» → `sessionStore.start(config)` + `/sesion`.
+- `src/components/builder/BlockList.tsx` — lista ordenada, clave React = `block.id`; estado vacío en español.
+- `src/components/builder/BlockCard.tsx` — tarjeta por bloque: header «Bloque N · {Tipo}», campos por tipo reutilizando U5; ids de input únicos `bloque-{id}-{campo}`.
+- `src/components/builder/AddBlockMenu.tsx` — dos botones «Añadir bloque Clásico/Tabata» (menú plano; drag-drop fuera de v1).
+- `src/components/builder/ReorderControls.tsx` — subir/bajar con aria-label posicional + guardas disabled en extremos.
+- `src/components/shared/copy.ts` — `BUILDER_COPY` (añadir/quitar/subir/bajar/vacío) + `CONFIG_COPY.campos.descansoGlobalS` + `CONFIG_COPY.descripcion.personalizado`. La auditoría de copy (allowlist segundo plano) re-escanea automáticamente y sigue verde.
+- `src/components/builder/PersonalizadoBuilder.test.tsx` — 14 tests (tabla spec→tests abajo).
+
+### Spec → tests (timer-modes)
+
+| Scenario | Test |
+| --- | --- |
+| Empty sequence is rejected | «arranca con cero bloques…» + «rechaza iniciar con cero bloques» (mensaje «Añade al menos un bloque…», start/push NUNCA llamados) |
+| Mixed sequence runs block by block (UI→plan) | resumen 2:00 = Tabata 60 + descanso global 20 + Clásico 40 (compilePlan vivo); «—» sin bloques |
+| Block values are independent | dos Clásico: editar trabajo del bloque 2 a 45 no toca el 30 del bloque 1 (UI + config enviada) |
+| Reordering changes execution order | «Subir bloque 2» + Iniciar ⇒ `compilePlan(config)` primer trabajo 45 s con label «Bloque 1 · Trabajo» (orden compilado, no solo visual) |
+| Valid configuration / builder ops | añade Clásico+Tabata con sus campos; elimina (renumeración); guardas subir/bajar disabled en extremos; config exacta + `rondas: rondasPorTabata` vestigial + push /sesion |
+| Descanso global = misma validación | 0 s ⇒ «El descanso global debe durar al menos 1 segundo», sin start |
+| All modes reachable (cierre) | shell `/personalizado` renderiza h1 nivel 1 + constructor (home link existente de U5) |
+
+### Decisions / deviations
+
+- **Estado de bloques sin `useFieldArray`**: RHF `useFieldArray` secuestra la propiedad `id` de cada item (su clave interna colisiona con el `id` estable de `BlockDef`, design §3.1). Se gestionan las operaciones estructurales con `getValues("blocks")` + `setValue("blocks", …)` — los ids permanecen estables a través de añadir/quitar/reordenar y cada bloque conserva su estado bajo `blocks[i].values.*`.
+- **Cast documentado único en el límite de render** (patrón U3 en `personalizadoSeeds`): `values.blocks as BlockDef[]` — el `rondas` vestigial de Tabata es opcional en el schema zod pero requerido en el tipo; el render no lee ese campo. Mismo cast en `BlockCard` (`values as TabataValues`) para los tres campos exclusivos de Tabata. La config de envío se normaliza en `toPersonalizadoConfig`, que fija `rondas: rondasPorTabata` (misma decisión que `TabataConfigScreen` en U5).
+- **Errores anidados**: `zodResolver` (U5) ya anidaba rutas `blocks[i].values.campo`; el builder los aplana a `Partial<Record<BlockCampo, string>>` con un cast documentado (el tipado de RHF para arrays de uniones no modela el runtime del resolver).
+- **clearErrors("blocks") tras cada operación estructural**: los errores viven por índice; reordenar/eliminar los dejaría desalineados con los bloques que quedan.
+- **Defaults**: descanso global 20 s (escenario del spec); semillas de bloque = defaults de U5 (Clásico 10/30/15/2, Tabata 10/20/10/2/2/60). El builder arranca con CERO bloques (el escenario «Empty sequence» exige ver el rechazo).
+- **`crypto.randomUUID` con fallback** a contador (`bloque-{Date.now()}-{n}`) — jsdom no garantiza `randomUUID`.
+- **Menú plano, no dropdown**: dos botones visibles — simple y testeable (tasks: drag-drop NO requerido en v1; mismo espíritu para el menú). No se consumió ningún componente ui nuevo (button existente basta).
+
+### Remaining tasks
+
+U7–U13 sin marcar (37 tareas). Next unit: **U7 — Session store + active screen + controller — PR 7** (primer sin marcar: `- [ ] RED: src/stores/sessionStore.test.ts`).
+
+### Workload / PR boundary
+
+- PR 6 = U6 only, branch `u6-builder` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Authored lines ≈ 780 (implementación ≈ 425: builder 5 componentes + page + copy; tests ≈ 320 + artifacts ≈ 35). Por encima del estimado ~300 y del presupuesto 400: los tests son los escenarios literales del spec timer-modes (14 tests: vacío, validación×2, independencia, resumen×3, reorder-compilado, config exacta, shell). La ruta auto-chain está resuelta; forecast por-unidad «Medium». Se reporta para el chequeo de tamaño del orquestador (`size:exception` disponible si el reviewer quiere dividir, aunque separar el builder de sus tests rompe la co-localización). Dentro del presupuesto del intento (1500).
+
+### Structured status consumed
+
+- `applyState: ready` (30/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
