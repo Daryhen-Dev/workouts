@@ -1,44 +1,114 @@
-// ⚠ SEAM U5→U7 — CONTRATO MÍNIMO (placeholder documentado).
+// Store de sesión EFÍMERO (U7 — reemplaza el seam U5). Diseño §4.1/§3.5:
+// envoltura zustand del motor U4 con la vista cacheada y el reloj inyectado.
 //
-// U5 no conecta el motor (U7 lo posee). Este módulo existe para que las
-// pantallas de configuración codifiquen YA el contrato real:
+// CONTRATO PÚBLICO FIJO (tasks.md U5/U7):
+//   `start(config)` — las pantallas de configuración llaman exactamente así y
+//   luego navegan a /sesion. Se conserva como exportación imperativa (alias del
+//   store) para que U5/U6 no cambien; los tests de U5 mockean este módulo con
+//   `{ start }` — el mock sigue siendo válido.
 //
-//   Iniciar → `start(config)` con la SessionConfig exacta → navegar a /sesion.
-//
-// La implementación provisional guarda la config pendiente en una variable de
-// módulo (la navegación cliente a cliente conserva el contexto JS, así que el
-// handoff funciona dentro de la sesión SPA; una recarga lo pierde — aceptable
-// para el placeholder, U7 lo reemplaza por el store zustand real con el motor
-// U4: `start` compilará el plan, creará SessionState y `/sesion` leerá el
-// estado del store). Los tests de U5 mockean `start`; el mock ES el contrato.
-//
-// Alternativa descartada (documentada): serializar la config en sessionStorage
-// bajo una clave tipada — se eligió el seam del store porque es el contrato
-// que tasks.md U5 fija literalmente ("Iniciar" llama `sessionStore.start`).
+// Decisiones documentadas:
+// - NUNCA persistido (diseño §4.1): sin zustand persist, sin localStorage; una
+//   recarga descarta la sesión (frontera honesta aceptada, diseño §13).
+// - Los acciones mapean 1:1 a las funciones puras del motor: el store jamás
+//   hace aritmética propia; la verdad de pantalla SIEMPRE es computeView.
+// - `start(config, clock?)`: el reloj inyectado queda retenido para que todas
+//   las acciones posteriores usen el mismo reloj (los tests inyectan FakeClock;
+//   el default es systemClock = Date.now, §3.3).
+// - Seam de completado para U8: `setOnComplete(cb)` registra el callback que el
+//   observador del SessionController dispara EXACTAMENTE UNA VEZ al transicionar
+//   el status de la vista a completed. El callback recibe los datos del motor
+//   (config + elapsedActiveMs de la vista completada + completedAt); U8 lo cablea
+//   a historyStore.addEntry + navegación a /resumen. En U7 nadie lo registra por
+//   defecto — la sesión completada simplemente se muestra (sin resumen aún).
 
-import type { SessionConfig } from "@/lib/timer/types";
+import { create } from "zustand";
+import { systemClock, type Clock } from "@/lib/timer/clock";
+import {
+  computeView,
+  pauseSession,
+  resumeSession,
+  startSession,
+} from "@/lib/timer/engine";
+import type {
+  SessionConfig,
+  SessionState,
+  SessionView,
+} from "@/lib/timer/types";
 
-let pendingConfig: SessionConfig | null = null;
-
-/** Registra la config que la pantalla de /sesion debe arrancar (placeholder). */
-export function setPendingConfig(config: SessionConfig): void {
- pendingConfig = config;
+/** Datos del motor que el seam entrega a U8 en la completación natural. */
+export interface SessionCompletionData {
+  /** Config retenida por la sesión (fuente de conteos de esfuerzo del resumen). */
+  config: SessionConfig;
+  /** elapsedActiveMs de la vista completada (= totalActiveMs configurado, contrato engine U4). */
+  elapsedActiveMs: number;
+  /** Reloj en el momento de la detección (fecha de completado). */
+  completedAt: number;
 }
 
-/** Config pendiente de arranque, o null si nadie inició (placeholder). */
-export function getPendingConfig(): SessionConfig | null {
- return pendingConfig;
+export type SessionCompletionCallback = (data: SessionCompletionData) => void;
+
+interface SessionStoreState {
+  /** Estado del motor; null ⇒ no hay sesión (guarda de /sesion). */
+  state: SessionState | null;
+  /** Vista cacheada (computeView); se actualiza con refreshView. */
+  view: SessionView | null;
+  /** Reloj inyectado en start (default systemClock). */
+  clock: Clock;
+  /** Seam U8: callback de completado natural (disparado por SessionController). */
+  onComplete: SessionCompletionCallback | null;
+  setOnComplete: (cb: SessionCompletionCallback | null) => void;
+  /** Compila el plan y arranca (reemplaza cualquier sesión en curso). */
+  start: (config: SessionConfig, clock?: Clock) => void;
+  /** running → paused (no-op del motor si ya está pausada/completada). */
+  pause: () => void;
+  /** paused → running (no-op del motor si ya está corriendo/completada). */
+  resume: () => void;
+  /** Descarta la sesión por completo (la UI confirma antes de llamar). */
+  stop: () => void;
+  /** Recomputa la vista cacheada con el reloj actual (ticker/visibility). */
+  refreshView: () => void;
 }
 
-/** Limpia la config pendiente (p. ej. al descartar la sesión). */
-export function clearPendingConfig(): void {
- pendingConfig = null;
-}
+export const useSessionStore = create<SessionStoreState>()((set, get) => ({
+  state: null,
+  view: null,
+  clock: systemClock,
+  onComplete: null,
+  setOnComplete: (cb) => set({ onComplete: cb }),
+  start: (config, clock) => {
+    const clk = clock ?? get().clock;
+    const now = clk();
+    const state = startSession(config, now);
+    set({ clock: clk, state, view: computeView(state, now) });
+  },
+  pause: () => {
+    const { state, clock } = get();
+    if (!state) return;
+    const now = clock();
+    const next = pauseSession(state, now);
+    set({ state: next, view: computeView(next, now) });
+  },
+  resume: () => {
+    const { state, clock } = get();
+    if (!state) return;
+    const now = clock();
+    const next = resumeSession(state, now);
+    set({ state: next, view: computeView(next, now) });
+  },
+  stop: () => set({ state: null, view: null }),
+  refreshView: () => {
+    const { state, clock } = get();
+    if (!state) return;
+    set({ view: computeView(state, clock()) });
+  },
+}));
 
 /**
- * Contrato U7: arranca una sesión con la configuración validada.
- * Implementación provisional: retiene la config como pendiente.
+ * Arranque imperativo — mismo contrato del seam U5 (`start(config)`) que las
+ * pantallas Clásico/Tabata/Personalizado ya llaman; el reloj es opcional y solo
+ * lo inyectan los tests.
  */
-export function start(config: SessionConfig): void {
- setPendingConfig(config);
+export function start(config: SessionConfig, clock?: Clock): void {
+  useSessionStore.getState().start(config, clock);
 }

@@ -440,3 +440,78 @@ U7–U13 sin marcar (37 tareas). Next unit: **U7 — Session store + active scre
 ### Structured status consumed
 
 - `applyState: ready` (30/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
+
+---
+
+## U7 — Session store + active screen + controller (PR 7)
+
+**Branch**: `u7-session` (from `main` @ 41db4e2). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u7-1789135969-21677 (never written to any repo file).
+
+### Completed tasks (tasks.md checkboxes updated 6/6 U7 → `- [x]`)
+
+RED (1), GREEN (1), TRIANGULATE (2), REFACTOR (1) — all U7 lines checked.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED-1 | `src/stores/sessionStore.test.ts` | `Module "./sessionStore" has no exported member 'useSessionStore'` — 8/11 failed (el seam U5 no tiene store) | 11/11 pass |
+| GREEN-1 | `sessionStore.ts` real (zustand efímero) | (mismo run) | (mismo run) |
+| RED-2 | `src/components/timer/ActiveSessionScreen.test.tsx` | `Failed to resolve import "./ActiveSessionScreen"` — Test Files 1 failed | 9/9 pass tras GREEN-2 (fix intermedio honesto: `NextPhaseHint` partía «Siguiente: X» en dos nodos → un solo text run) |
+| GREEN-2 | `TimeDisplay` + `PhaseRing` + `NextPhaseHint` + `Controls` + `ActiveSessionScreen` + `SESSION_COPY` | (mismo run) | (mismo run) |
+| RED-3 | `src/features/session/SessionController.test.tsx` (ola 1: guarda, ticker, visibilidad, flash, completado, stop) | `Failed to resolve import "./SessionController"` — Test Files 1 failed | 13/13 pass (fix de fixture: fuga del spy de `refreshView` por `setState` que FUSIONA — `resetStore` restaura la acción real) |
+| GREEN-3 | `useSessionController.ts` + `SessionController.tsx` + `src/app/sesion/page.tsx` | (mismo run) | (mismo run) |
+| TRIANGULATE (tasks 3–5) | +6 tests (4 scenarios HARD GATE literales + shell chrome-minimal + copy honesto) | Pasaron al primer run — uniformidad estructural (el motor es la única fuente de verdad; el controlador solo re-computa). **Chequeo de mutación** como evidencia de dientes: eliminar el `refreshView()` del handler de `visibilitychange` ⇒ **6 tests fallan** (visibilidad inmediata, completado y 3 scenarios HARD GATE); revertido → 19/19 | 19/19 pass |
+| REFACTOR | auditoría de delgadez + extracción | — | suite completa **215/215** (19 archivos); `pnpm lint` limpio; `pnpm exec tsc --noEmit` exit 0; `pnpm build` verde (+`/sesion` 2.48 kB) |
+
+Safety net: baseline `pnpm test` en `main` antes de editar → **176/176** (16 archivos). Sin fallos preexistentes.
+
+### Files changed
+
+- `src/stores/sessionStore.ts` — **REEMPLAZO del seam U5**: store zustand EFÍMERO (§4.1) con `SessionState` + vista cacheada + reloj inyectado; acciones `start(config, clock?)/pause/resume/stop/refreshView` mapean 1:1 a `startSession/pauseSession/resumeSession/computeView` (el store NO hace aritmética). Export imperativo `start(config)` conservado — U5/U6 no cambian (sus mocks `{ start }` siguen válidos). Seam de completado para U8: `setOnComplete(cb)` + `SessionCompletionData { config, elapsedActiveMs, completedAt }`.
+- `src/features/session/useSessionController.ts` — observadores extraídos como hooks reutilizables (REFACTOR task): `useIntervalDriver` (ticker 250 ms solo corriendo+y visible), `useVisibilityChange` (→ refreshView inmediato), `usePhaseFlash` (observador de índice de fase; gancho observable `data-flashing` + clase `phase-flash` para U10/U13), `useCompletionObserver` (exactly-once sobre la transición de status; dispara el seam con datos del motor). `useSessionController` compone todo.
+- `src/features/session/SessionController.tsx` — única entrada cliente de `/sesion`: guarda (sin sesión → estado vacío español + `replace("/")`), flujo de descarte (diálogo → confirmar = `stop()` + `replace("/")`), render de la pantalla.
+- `src/components/timer/ActiveSessionScreen.tsx` — presentación del `SessionView`: etiqueta de fase (h1), `TimeDisplay`, `PhaseRing` (progressbar semántico), `NextPhaseHint`, `Controls`; estado completado sin controles (U8 navega al resumen vía seam).
+- `src/components/timer/{TimeDisplay,PhaseRing,NextPhaseHint,Controls,ConfirmStopDialog}.tsx` — m:ss mono con color por kind (§9.1: trabajo acento, descanso verde, preparación amarillo, largo/global azul); anillo conic-gradient puro (§9.3, sin lib); pista de siguiente; Pausar/Reanudar en el mismo botón + Detener; diálogo **escrito a mano** (decisión documentada: radix NO está en las deps aprobadas y tasks.md U7 permite el modal simple — `role="alertdialog"` + `aria-modal`).
+- `src/app/sesion/page.tsx` — shell servidor (§2.3); chrome-minimal §2.4 vía `showNavFor` (U2).
+- `src/components/shared/copy.ts` — bloque `SESSION_COPY` (controles, siguiente/última fase, completada, sin sesión, título/descripción/botones del descarte). La auditoría copy.test.ts lo re-escanea automáticamente (allowlist segundo plano).
+- Tests nuevos: `sessionStore.test.ts` (11), `ActiveSessionScreen.test.tsx` (9), `SessionController.test.tsx` (19).
+
+### Spec → tests (timer-correctness + workout-completion + ui-design)
+
+| Scenario | Test |
+| --- | --- |
+| Pause freezes the countdown | Screen «Pausar congela la cuenta…» + store «pause pliega… congela la vista» |
+| Resume continues the same phase | Screen «Reanudar continúa la misma fase…» (pausa 4 s suspendida no consume) |
+| Stop ends the session immediately | Controller «confirmar descarta: store a cero, vuelta al inicio, sin resumen ni entrada» |
+| Return from background mid-phase | Controller «5 s fuera → trabajo con 15 s» (literal spec) |
+| Return from tab switch across a boundary | Controller «cambio de pestaña 50 s → trabajo FINAL con 15 s» (+ «Última fase») |
+| Sleep/resume across multiple boundaries | Controller «sleep 120 s → posición exacta» (Tabata 170 s: 145 s → descanso 0:05) |
+| Session completes while suspended (parte sesión) | Controller «dispara el seam onComplete UNA sola vez» (elapsedActiveMs = 85_000 = totales; el resumen/entrada son U8) |
+| Paused sessions do not consume while suspended | Controller «pausada 2 min → sigue pausada con 20 s» |
+| Copy does not overpromise | Controller «ningún texto del temporizador promete segundo plano» + copy.test.ts allowlist (automático sobre SESSION_COPY) |
+| Manual Stop Discards (session-scoped) | Controller stop ×3 (confirmar/cancelar/en pausa) — sin entrada (onComplete NUNCA llamado), navegación a inicio |
+| Timer screen chrome-minimal §2.4 | Controller «el shell de la ruta renderiza el controlador… sin navigation» + showNavFor U2 |
+
+### Decisions / deviations
+
+- **`Clock` es `() => number`; `FakeClock` es un objeto** `{now,advance,set}`: los tests inyectan el reloj al store con un adaptador trivial `asClock(fake) = () => fake.now()` (no se tocó clock.ts de U4). Documentado en ambos tests.
+- **Diálogo de descarte a mano** (no radix, no shadcn add): radix no está en el set de deps; tasks.md U7 da a elegir. `role="alertdialog"`/`aria-modal`/aria-labelledby cubren la semántica.
+- **El porcentaje del anillo** es la única aritmética fuera del motor — presentacional (restante/duración de valores YA computados por el motor); la verdad de tiempo/fase SIEMPRE es `computeView`.
+- **Ticker re-anclado por render**: sin `useCallback` (disciplina react-19; compiler no activo), el intervalo se limpia/re-crea en cada render provocado por su propio tick — deriva ≈ latencia de render/tick, aceptable para un driver cosmético que jamás acumula (§3.5: nunca autoritativo).
+- **refreshView en ambas direcciones del visibilitychange** (también al ocultar): recomputar es barato y correcto en cualquier estado; el HARD GATE es al retorno.
+- **Guarda post-stop**: tras confirmar el descarte, la guarda del controlador también dispara `replace("/")` (doble con el handler — mismo destino, inofensivo).
+- **Fuga de fixture descubierta y corregida**: `useSessionStore.setState({ refreshView: spy })` FUSIONA y el espía se fugaba a tests siguientes; `resetStore` restaura la acción real capturada al importar.
+
+### Remaining tasks
+
+U8–U13 sin marcar (31 tareas). Next unit: **U8 — Completion + history — PR 8** (primer sin marcar: `- [ ] RED: src/lib/storage/persisted.test.ts`). U8 cablea el seam: `sessionStore.setOnComplete(data => { historyStore.addEntry(...); router.push("/resumen"); })`.
+
+### Workload / PR boundary
+
+- PR 7 = U7 only, branch `u7-session` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Authored lines ≈ 1,415 (implementación ≈ 620: store 110 + controller 48 + hook 126 + pantalla 86 + 5 subcomponentes 193 + page 13 + copy 20 + comentarios; tests ≈ 765: 11+9+19 escenarios de spec; artifacts ≈ 30). Por encima del estimado ~350 y del presupuesto 400: los tests son el 54% y cubren los 4 scenarios HARD GATE literales en nivel de componente + exactamente-una-vez + ticker/visibilidad/flash + stop ×3 + guarda + copy (obligación de tasks.md U7). El forecast por-unidad era «High»; la ruta auto-chain está resuelta. Se reporta para el chequeo de tamaño del orquestador (`size:exception` disponible si el reviewer quiere dividir, aunque separar el controlador de sus scenarios HARD GATE rompería la co-localización del gate). Dentro del presupuesto del intento (1500).
+
+### Structured status consumed
+
+- `applyState: ready` (34/71 complete), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.

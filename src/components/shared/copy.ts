@@ -65,3 +65,23 @@ export const BUILDER_COPY = {
  vacio:
   "Sin bloques todavía. Añade un bloque Clásico o Tabata para armar tu secuencia.",
 } as const;
+
+// ——— Copy de la sesión activa (U7: temporizador, controles y descarte) ———
+// Frontera honesta (spec timer-correctness): nada aquí promete ejecución en
+// segundo plano — la auditoría de copy.test.ts re-escanea este bloque.
+
+export const SESSION_COPY = {
+ pausar: "Pausar",
+ reanudar: "Reanudar",
+ detener: "Detener",
+ siguiente: "Siguiente",
+ ultimaFase: "Última fase",
+ completada: "Sesión completada",
+ progresoFase: "Progreso de fase",
+ sinSesion: "No hay ninguna sesión en curso. Volviendo al inicio…",
+ detenerTitulo: "¿Descartar la sesión?",
+ detenerDescripcion:
+  "Si descartas la sesión ahora, no se guardará en el historial.",
+ detenerCancelar: "Cancelar",
+ detenerConfirmar: "Descartar",
+} as const;
