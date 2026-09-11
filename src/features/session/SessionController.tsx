@@ -10,7 +10,10 @@ import { SESSION_COPY } from "@/components/shared/copy";
 import { ActiveSessionScreen } from "@/components/timer/ActiveSessionScreen";
 import { ConfirmStopDialog } from "@/components/timer/ConfirmStopDialog";
 import { useSessionStore } from "@/stores/sessionStore";
-import { useSessionController } from "./useSessionController";
+import {
+  useCompletionWiring,
+  useSessionController,
+} from "./useSessionController";
 
 export function SessionController() {
   const router = useRouter();
@@ -18,6 +21,9 @@ export function SessionController() {
   const stop = useSessionStore((s) => s.stop);
   const [stopOpen, setStopOpen] = useState(false);
   const { flash } = useSessionController();
+
+  // U8: completado natural → UNA entrada de historial + /resumen (seam U7).
+  useCompletionWiring((to) => router.replace(to));
 
   // Guarda: entrar a /sesion sin sesión devuelve al inicio (con aviso español).
   useEffect(() => {

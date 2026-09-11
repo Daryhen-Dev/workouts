@@ -19,6 +19,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 import SesionPage from "@/app/sesion/page";
+import { buildHistoryEntry } from "@/lib/history/entry";
+import { HISTORY_STORAGE_KEY, useHistoryStore } from "@/stores/historyStore";
 import { SessionController } from "./SessionController";
 
 /** Clásico del spec: preparación 10, trabajo 30, descanso 15, 2 rondas → 85 s. */
@@ -434,5 +436,130 @@ describe("/sesion — shell chrome-minimal y copy honesto", () => {
         patron,
       );
     }
+  });
+});
+
+describe("SessionController — cableado de completado U8 (entrada de historial + /resumen)", () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(HISTORY_STORAGE_KEY);
+    useHistoryStore.setState({ entries: [] });
+  });
+
+  it("completado natural añade EXACTAMENTE UNA entrada con los campos del spec y navega a /resumen", () => {
+    const clock = createFakeClock(0);
+    mountRunning(clock);
+
+    // Pausa de 30 s en medio: el reloj avanza pero NO consume tiempo activo.
+    act(() => {
+      clock.advance(20_000);
+      useSessionStore.getState().pause();
+    });
+    act(() => clock.advance(30_000));
+    act(() => {
+      useSessionStore.getState().resume();
+      clock.advance(65_000); // 20 + 65 = 85 s activos → completada
+      useSessionStore.getState().refreshView();
+    });
+
+    expect(useSessionStore.getState().view!.status).toBe(
+      SESSION_STATUS.completed,
+    );
+
+    // Spec workout-completion/history: exactamente una entrada, campos por modo.
+    const entries = useHistoryStore.getState().entries;
+    expect(entries).toHaveLength(1);
+    const entry = entries[0];
+    expect(entry.mode).toBe("clasico");
+    expect(entry.rounds).toBe(2);
+    // 85 s (NO 115 s): la pausa queda excluida del activo medido (spec).
+    expect(entry.activeDurationMs).toBe(85_000);
+    expect(entry.completedAt).toBe(115_000); // reloj en el momento de la detección
+    expect(entry.id).toMatch(/.+/);
+    expect(mocks.replace).toHaveBeenCalledWith("/resumen");
+
+    // Exactly-once a través de re-renders y refreshes posteriores.
+    act(() => {
+      clock.advance(5_000);
+      useSessionStore.getState().refreshView();
+    });
+    act(() => setVisibility("hidden"));
+    act(() => setVisibility("visible"));
+    expect(useHistoryStore.getState().entries).toHaveLength(1);
+    expect(
+      mocks.replace.mock.calls.filter(([to]) => to === "/resumen"),
+    ).toHaveLength(1);
+  });
+
+  it("completado recomputado tras suspensión (visibilitychange) también registra UNA entrada", () => {
+    const clock = createFakeClock(0);
+    mountRunning(clock);
+    act(() => setVisibility("hidden"));
+
+    act(() => {
+      clock.advance(200_000); // la sesión termina MIENTRAS está suspendida
+      setVisibility("visible"); // recomputación al retorno → completado
+    });
+
+    const entries = useHistoryStore.getState().entries;
+    expect(entries).toHaveLength(1); // spec timer-correctness: "Session completes while suspended"
+    expect(entries[0].activeDurationMs).toBe(85_000); // totales configurados, exactos
+    expect(mocks.replace).toHaveBeenCalledWith("/resumen");
+  });
+
+  it("detener confirmado NO añade entrada (spec workout-completion: stopped leaves no record)", () => {
+    const clock = createFakeClock(0);
+    mountRunning(clock);
+
+    act(() => clock.advance(20_000));
+    fireEvent.click(screen.getByRole("button", { name: "Detener" }));
+    fireEvent.click(screen.getByRole("button", { name: "Descartar" }));
+
+    expect(useHistoryStore.getState().entries).toHaveLength(0);
+    expect(mocks.replace).toHaveBeenCalledWith("/");
+    expect(mocks.replace).not.toHaveBeenCalledWith("/resumen");
+  });
+
+  it("la entrada cableada es exactamente buildHistoryEntry sobre los datos del motor", () => {
+    const clock = createFakeClock(0);
+    act(() =>
+      useSessionStore.getState().start(
+        {
+          mode: "tabata",
+          values: {
+            preparacionS: 10,
+            trabajoS: 20,
+            descansoS: 10,
+            rondas: 2,
+            rondasPorTabata: 2,
+            tabatas: 2,
+            descansoLargoS: 60,
+          },
+        },
+        asClock(clock),
+      ),
+    );
+    render(<SessionController />);
+
+    act(() => {
+      clock.advance(170_000); // Tabata del spec completa
+      useSessionStore.getState().refreshView();
+    });
+
+    const entries = useHistoryStore.getState().entries;
+    expect(entries).toHaveLength(1);
+    const built = buildHistoryEntry({
+      config: TABATA_170,
+      elapsedActiveMs: 170_000,
+      completedAt: 170_000,
+    });
+    expect(entries[0]).toMatchObject({
+      mode: built.mode,
+      rounds: built.rounds,
+      tabatas: built.tabatas,
+      activeDurationMs: built.activeDurationMs,
+      completedAt: built.completedAt,
+    });
+    expect(entries[0].rounds).toBe(4); // 2 rondas por tabata × 2 tabatas
+    expect(entries[0].tabatas).toBe(2);
   });
 });

@@ -85,3 +85,38 @@ export const SESSION_COPY = {
  detenerCancelar: "Cancelar",
  detenerConfirmar: "Descartar",
 } as const;
+
+// ——— Copy del resumen de completado (U8: /resumen) ———
+
+export const RESUMEN_COPY = {
+ titulo: "Resumen",
+ descripcion: "Tu sesión quedó registrada en el historial.",
+ modo: "Modo",
+ tiempoActivo: "Tiempo activo",
+ volverInicio: "Volver al inicio",
+ verHistorial: "Ver historial",
+ vacio: "Todavía no hay ninguna sesión completada.",
+} as const;
+
+// ——— Copy del historial (U8: /historial) ———
+// Labels del spec: «X sesiones · tiempo total · duración media»;
+// períodos «últimos 7 días / últimos 30 días / toda la historia».
+
+export const HISTORY_COPY = {
+ titulo: "Historial",
+ descripcion: "Tus sesiones completadas.",
+ periodo: "Período",
+ tipo: "Tipo",
+ periodos: {
+  dias7: "Últimos 7 días",
+  dias30: "Últimos 30 días",
+  todo: "Toda la historia",
+ },
+ tipos: { todas: "Todas", ...MODE_LABEL },
+ sesion: "sesión",
+ sesiones: "sesiones",
+ tiempoTotal: "Tiempo total",
+ duracionMedia: "Duración media",
+ vacio: "Todavía no hay sesiones completadas.",
+ sinResultados: "No hay sesiones con estos filtros.",
+} as const;
