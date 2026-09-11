@@ -2,7 +2,13 @@
 // (sessionStore.start(routine.config) + /sesion), renombrar/eliminar con
 // diálogos (spec routines). El store y los diálogos son reales; solo se
 // mockean el seam de sesión y la navegación (patrón de las pantallas U5/U6).
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MODE } from "@/lib/timer/types";
 import type {
@@ -60,7 +66,10 @@ const personalizadoConfig: PersonalizadoConfig = {
 };
 
 /** Guarda por el store real (ejercita el camino de producción). */
-function seedRoutine(name: string, config: SessionConfig = clasicoConfig): RoutineRecord {
+function seedRoutine(
+  name: string,
+  config: SessionConfig = clasicoConfig,
+): RoutineRecord {
   const result = useRoutinesStore.getState().save(config, name);
   if (result.status !== "saved") throw new Error(`fixture save ${name}`);
   return result.record;
@@ -119,7 +128,9 @@ describe("RoutinesScreen — Iniciar directo (spec: Start directly from the list
     const piernas = seedRoutine("Piernas");
     render(<RoutinesScreen />);
 
-    fireEvent.click(within(row(piernas.id)).getByRole("button", { name: "Iniciar" }));
+    fireEvent.click(
+      within(row(piernas.id)).getByRole("button", { name: "Iniciar" }),
+    );
 
     expect(mocks.start).toHaveBeenCalledTimes(1);
     expect(mocks.start.mock.calls[0][0]).toEqual(clasicoConfig);
@@ -130,7 +141,9 @@ describe("RoutinesScreen — Iniciar directo (spec: Start directly from the list
     const mixta = seedRoutine("Mixta", personalizadoConfig);
     render(<RoutinesScreen />);
 
-    fireEvent.click(within(row(mixta.id)).getByRole("button", { name: "Iniciar" }));
+    fireEvent.click(
+      within(row(mixta.id)).getByRole("button", { name: "Iniciar" }),
+    );
 
     expect(mocks.start.mock.calls[0][0]).toEqual(personalizadoConfig);
   });
@@ -183,7 +196,9 @@ describe("RoutinesScreen — renombrar (spec: Rename preserves configuration)", 
     fireEvent.change(input, { target: { value: "   " } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Renombrar" }));
     expect(
-      await within(dialog).findByText("El nombre de la rutina no puede estar vacío"),
+      await within(dialog).findByText(
+        "El nombre de la rutina no puede estar vacío",
+      ),
     ).toBeInTheDocument();
 
     fireEvent.change(input, { target: { value: "Brazos" } });
@@ -228,9 +243,9 @@ describe("RoutinesScreen — eliminar (spec: Delete removes only the routine)", 
       expect(screen.queryByText("Piernas")).not.toBeInTheDocument(),
     );
     expect(screen.getByText("Brazos")).toBeInTheDocument();
-    expect(
-      useRoutinesStore.getState().routines.map((r) => r.id),
-    ).toEqual([brazos.id]);
+    expect(useRoutinesStore.getState().routines.map((r) => r.id)).toEqual([
+      brazos.id,
+    ]);
     expect(useHistoryStore.getState().entries.map((e) => e.id)).toEqual([
       "h-1",
     ]);

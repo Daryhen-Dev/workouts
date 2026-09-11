@@ -158,6 +158,7 @@ export const ROUTINES_COPY = {
  errores: {
   nombreVacio: "El nombre de la rutina no puede estar vacío",
   nombreDuplicado: "Ya existe una rutina con ese nombre",
-  configInvalida: "Revisa los valores de la configuración antes de guardar la rutina",
+  configInvalida:
+   "Revisa los valores de la configuración antes de guardar la rutina",
  },
 } as const;

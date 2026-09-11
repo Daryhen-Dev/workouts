@@ -21,10 +21,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 import { PersonalizadoBuilder } from "./PersonalizadoBuilder";
 import PersonalizadoPage from "@/app/personalizado/page";
 import { compilePlan } from "@/lib/timer/plan";
-import {
-  ROUTINES_STORAGE_KEY,
-  useRoutinesStore,
-} from "@/stores/routinesStore";
+import { ROUTINES_STORAGE_KEY, useRoutinesStore } from "@/stores/routinesStore";
 
 /** Raíz de la tarjeta del bloque (article) localizada por su encabezado. */
 function card(titulo: string): HTMLElement {

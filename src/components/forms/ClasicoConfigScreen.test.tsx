@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Contrato del seam con U7 (tasks.md U5 GREEN): "Iniciar" llama
@@ -13,10 +19,7 @@ vi.mock("@/stores/sessionStore", () => ({ start: mocks.start }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 import { ClasicoConfigScreen } from "./ClasicoConfigScreen";
-import {
-  ROUTINES_STORAGE_KEY,
-  useRoutinesStore,
-} from "@/stores/routinesStore";
+import { ROUTINES_STORAGE_KEY, useRoutinesStore } from "@/stores/routinesStore";
 
 /** Cambia un campo numérico etiquetado (el input es controlado por RHF). */
 function setField(label: string, value: string) {

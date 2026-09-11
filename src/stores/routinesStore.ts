@@ -194,9 +194,7 @@ export const useRoutinesStore = create<RoutinesStoreState>()(
         if (!target) {
           return { status: ROUTINE_WRITE_RESULT.rejectedMissing };
         }
-        const clash = current.some(
-          (r) => r.id !== id && r.name === trimmed,
-        );
+        const clash = current.some((r) => r.id !== id && r.name === trimmed);
         if (clash) {
           return { status: ROUTINE_WRITE_RESULT.rejectedDuplicateName };
         }

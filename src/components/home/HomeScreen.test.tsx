@@ -104,6 +104,8 @@ describe("HomeScreen — slot de rutinas rápidas (spec routines, U9)", () => {
   it("sin rutinas guardadas el slot no aparece", () => {
     render(<HomeScreen />);
     expect(screen.queryByText("Rutinas guardadas")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Piernas/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Piernas/ }),
+    ).not.toBeInTheDocument();
   });
 });

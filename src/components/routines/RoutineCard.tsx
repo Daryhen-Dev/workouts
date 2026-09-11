@@ -32,27 +32,27 @@ export function RoutineCard({
             {DATE_FORMATTER.format(routine.updatedAt)}
           </p>
           <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onStart}
-            className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-base transition-colors hover:bg-pink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {ROUTINES_COPY.iniciar}
-          </button>
-          <button
-            type="button"
-            onClick={onRename}
-            className="rounded-md border border-surface-1 px-3 py-1.5 text-sm text-subtext1 transition-colors hover:border-accent hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {ROUTINES_COPY.renombrar}
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="rounded-md border border-surface-1 px-3 py-1.5 text-sm text-danger transition-colors hover:border-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {ROUTINES_COPY.eliminar}
-          </button>
+            <button
+              type="button"
+              onClick={onStart}
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-base transition-colors hover:bg-pink-bright focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {ROUTINES_COPY.iniciar}
+            </button>
+            <button
+              type="button"
+              onClick={onRename}
+              className="rounded-md border border-surface-1 px-3 py-1.5 text-sm text-subtext1 transition-colors hover:border-accent hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {ROUTINES_COPY.renombrar}
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-md border border-surface-1 px-3 py-1.5 text-sm text-danger transition-colors hover:border-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {ROUTINES_COPY.eliminar}
+            </button>
           </div>
         </div>
       </div>

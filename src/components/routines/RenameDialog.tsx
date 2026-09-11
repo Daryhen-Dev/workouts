@@ -10,22 +10,24 @@ import { useRoutinesStore } from "@/stores/routinesStore";
 import { RoutineNameDialog } from "./RoutineNameDialog";
 
 export interface RenameDialogProps {
-  open: boolean;
-  routine: RoutineRecord | null;
-  onClose: () => void;
+    open: boolean;
+    routine: RoutineRecord | null;
+    onClose: () => void;
 }
 
 export function RenameDialog({ open, routine, onClose }: RenameDialogProps) {
-  if (!routine) return null;
-  return (
-    <RoutineNameDialog
-      open={open}
-      title={ROUTINES_COPY.renombrarDialogo.titulo}
-      description={ROUTINES_COPY.renombrarDialogo.descripcion}
-      submitLabel={ROUTINES_COPY.renombrar}
-      initialName={routine.name}
-      onCommit={(name) => useRoutinesStore.getState().rename(routine.id, name)}
-      onClose={onClose}
-    />
-  );
+    if (!routine) return null;
+    return (
+        <RoutineNameDialog
+            open={open}
+            title={ROUTINES_COPY.renombrarDialogo.titulo}
+            description={ROUTINES_COPY.renombrarDialogo.descripcion}
+            submitLabel={ROUTINES_COPY.renombrar}
+            initialName={routine.name}
+            onCommit={(name) =>
+                useRoutinesStore.getState().rename(routine.id, name)
+            }
+            onClose={onClose}
+        />
+    );
 }

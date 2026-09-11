@@ -29,10 +29,7 @@ export interface RoutineNameDialogProps {
   /** Valor inicial del campo (renombrar precarga el nombre actual). */
   initialName: string;
   /** Intento de escritura; el resultado dirige la UI del diálogo. */
-  onCommit: (
-    name: string,
-    opts: { overwrite: boolean },
-  ) => RoutineWriteResult;
+  onCommit: (name: string, opts: { overwrite: boolean }) => RoutineWriteResult;
   onClose: () => void;
 }
 
@@ -119,7 +116,10 @@ export function RoutineNameDialog({
               {sobrescribir.descripcion}
             </p>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setPendingOverwrite(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setPendingOverwrite(false)}
+              >
                 {cancelar}
               </Button>
               <Button

@@ -597,4 +597,3 @@ U10–U13 sin marcar (22 tareas). Next unit: **U10 — Audio I: in-memory beeps 
 ### Structured status consumed
 
 - `applyState: ready` (44/71 complete al iniciar), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta. Attempt authority: u9-1789156891-18801 (nunca escrito a ningún archivo del repo).
-

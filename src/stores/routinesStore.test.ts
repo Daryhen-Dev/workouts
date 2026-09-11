@@ -105,7 +105,9 @@ describe("routinesStore — save/list (spec: Save a Clásico routine)", () => {
   });
 
   it("recorta el nombre antes de guardarlo («  Piernas  » → «Piernas»)", () => {
-    const result = useRoutinesStore.getState().save(clasicoConfig, "  Piernas  ");
+    const result = useRoutinesStore
+      .getState()
+      .save(clasicoConfig, "  Piernas  ");
     expect(result.status).toBe("saved");
     expect(names()).toEqual(["Piernas"]);
   });
@@ -282,9 +284,7 @@ describe("routinesStore — persistencia (spec: Routines survive reload)", () =>
       ],
     });
 
-    await expect(
-      useRoutinesStore.persist.rehydrate(),
-    ).resolves.toBeUndefined();
+    await expect(useRoutinesStore.persist.rehydrate()).resolves.toBeUndefined();
     expect(names()).toEqual(["Previa"]); // conserva la memoria
   });
 

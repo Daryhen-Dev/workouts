@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mismo seam que Clásico: el mock de `sessionStore.start` codifica el contrato
@@ -12,10 +18,7 @@ vi.mock("@/stores/sessionStore", () => ({ start: mocks.start }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 import { TabataConfigScreen } from "./TabataConfigScreen";
-import {
-  ROUTINES_STORAGE_KEY,
-  useRoutinesStore,
-} from "@/stores/routinesStore";
+import { ROUTINES_STORAGE_KEY, useRoutinesStore } from "@/stores/routinesStore";
 
 function setField(label: string, value: string) {
   fireEvent.change(screen.getByLabelText(label), {
@@ -117,12 +120,12 @@ describe("TabataConfigScreen — resumen de duración total (compilePlan)", () =
     expect(screen.getByTestId("total-sesion")).toHaveTextContent("2:50");
   });
 
-      it("el resumen reacciona en vivo: 1 tabata elimina el descanso largo (60 s → 1:00)", () => {
-        render(<TabataConfigScreen />);
-        setField("Tabatas", "1");
-        expect(screen.getByTestId("total-sesion")).toHaveTextContent("1:00");
-      });
-    });
+  it("el resumen reacciona en vivo: 1 tabata elimina el descanso largo (60 s → 1:00)", () => {
+    render(<TabataConfigScreen />);
+    setField("Tabatas", "1");
+    expect(screen.getByTestId("total-sesion")).toHaveTextContent("1:00");
+  });
+});
 
 describe("TabataConfigScreen — Guardar rutina (spec routines, U9)", () => {
   it("guarda la config actual con el `rondas` vestigial fijado", async () => {
