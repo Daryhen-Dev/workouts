@@ -7,7 +7,10 @@ import { isActivePath, showNavFor } from "./nav";
 
 // Skin única: se lee el CSS real servido por la app (vitest no procesa CSS
 // por defecto, así que se lee el archivo directamente del disco).
-const globalsCss = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+const globalsCss = readFileSync(
+  join(process.cwd(), "src/app/globals.css"),
+  "utf8",
+);
 
 // Mutable pathname so tests can exercise both normal routes and the
 // chrome-minimal `/sesion` opt-out without a real App Router context.
@@ -55,7 +58,8 @@ describe("AppShell — marca y pestañas (ui-design)", () => {
 
   it("no contiene ningún control de tema o skin en ninguna parte", () => {
     render(<AppShell>{null}</AppShell>);
-    const switcherPattern = /tema|theme|skin|apariencia|modo claro|modo oscuro/i;
+    const switcherPattern =
+      /tema|theme|skin|apariencia|modo claro|modo oscuro/i;
     const controls = [
       ...screen.queryAllByRole("button"),
       ...screen.queryAllByRole("combobox"),
@@ -64,7 +68,8 @@ describe("AppShell — marca y pestañas (ui-design)", () => {
       ...screen.queryAllByRole("listbox"),
     ];
     for (const control of controls) {
-      const name = control.getAttribute("aria-label") ?? control.textContent ?? "";
+      const name =
+        control.getAttribute("aria-label") ?? control.textContent ?? "";
       expect(name).not.toMatch(switcherPattern);
     }
   });

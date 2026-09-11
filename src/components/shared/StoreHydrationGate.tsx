@@ -12,7 +12,9 @@ import { storeRehydrators, type Rehydrator } from "@/stores/storeRehydrators";
 
 const NO_EXTRA_REHYDRATORS: Rehydrator[] = [];
 
-export function useHydrated(extraRehydrators: Rehydrator[] = NO_EXTRA_REHYDRATORS): boolean {
+export function useHydrated(
+  extraRehydrators: Rehydrator[] = NO_EXTRA_REHYDRATORS,
+): boolean {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -43,7 +45,13 @@ export function StoreHydrationGate({
   const hydrated = useHydrated(rehydrators);
 
   if (!hydrated) {
-    return <Skeleton role="status" aria-label="Cargando datos" className="h-64 w-full" />;
+    return (
+      <Skeleton
+        role="status"
+        aria-label="Cargando datos"
+        className="h-64 w-full"
+      />
+    );
   }
   return <>{children}</>;
 }

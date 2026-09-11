@@ -18,7 +18,7 @@ describe("StoreHydrationGate — hidratación de stores persistidos (§2.3)", ()
     render(
       <StoreHydrationGate rehydrators={[rehydrate]}>
         <p>Contenido hidratado</p>
-      </StoreHydrationGate>
+      </StoreHydrationGate>,
     );
 
     expect(rehydrate).toHaveBeenCalledTimes(1);
@@ -27,7 +27,7 @@ describe("StoreHydrationGate — hidratación de stores persistidos (§2.3)", ()
 
     pending.resolve();
     await waitFor(() =>
-      expect(screen.getByText("Contenido hidratado")).toBeInTheDocument()
+      expect(screen.getByText("Contenido hidratado")).toBeInTheDocument(),
     );
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -37,9 +37,11 @@ describe("StoreHydrationGate — hidratación de stores persistidos (§2.3)", ()
     const second = deferred();
 
     render(
-      <StoreHydrationGate rehydrators={[() => first.promise, () => second.promise]}>
+      <StoreHydrationGate
+        rehydrators={[() => first.promise, () => second.promise]}
+      >
         <p>Hijos</p>
-      </StoreHydrationGate>
+      </StoreHydrationGate>,
     );
 
     first.resolve();
@@ -53,7 +55,9 @@ describe("StoreHydrationGate — hidratación de stores persistidos (§2.3)", ()
 
   it("sin rehydrators registrados, hidrata en el primer efecto", async () => {
     render(<StoreHydrationGate>Todo listo</StoreHydrationGate>);
-    await waitFor(() => expect(screen.getByText("Todo listo")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Todo listo")).toBeInTheDocument(),
+    );
   });
 
   it("un rehydrator que falla no bloquea la app (fail-open)", async () => {
@@ -61,10 +65,10 @@ describe("StoreHydrationGate — hidratación de stores persistidos (§2.3)", ()
     render(
       <StoreHydrationGate rehydrators={[failing]}>
         <p>Estado por defecto</p>
-      </StoreHydrationGate>
+      </StoreHydrationGate>,
     );
     await waitFor(() =>
-      expect(screen.getByText("Estado por defecto")).toBeInTheDocument()
+      expect(screen.getByText("Estado por defecto")).toBeInTheDocument(),
     );
   });
 });

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 // vitest no procesa CSS por defecto.
 const globalsCss = readFileSync(
   join(process.cwd(), "src/app/globals.css"),
-  "utf8"
+  "utf8",
 );
 const GENTLEMAN_TOKENS: Array<[name: string, value: string]> = [
   ["--color-base", "#1a1218"],
@@ -78,7 +78,11 @@ describe("globals.css — tokens Gentleman (§9.1)", () => {
   });
 
   it("mapea los alias semánticos a utilidades Tailwind (@theme inline)", () => {
-    expect(globalsCss).toMatch(/@theme\s+inline\s*\{[^}]*--color-background:\s*var\(--background\)/);
-    expect(globalsCss).toMatch(/@theme\s+inline\s*\{[^}]*--color-primary:\s*var\(--primary\)/);
+    expect(globalsCss).toMatch(
+      /@theme\s+inline\s*\{[^}]*--color-background:\s*var\(--background\)/,
+    );
+    expect(globalsCss).toMatch(
+      /@theme\s+inline\s*\{[^}]*--color-primary:\s*var\(--primary\)/,
+    );
   });
 });

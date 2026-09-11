@@ -32,7 +32,10 @@ export function HeaderBar() {
         >
           {BRAND}
         </Link>
-        <nav aria-label="Principal" className="hidden items-center gap-6 md:flex">
+        <nav
+          aria-label="Principal"
+          className="hidden items-center gap-6 md:flex"
+        >
           {NAV_ITEMS.map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
@@ -42,7 +45,7 @@ export function HeaderBar() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "text-sm font-medium text-subtext0 transition-colors hover:text-text",
-                  active && "text-accent hover:text-accent"
+                  active && "text-accent hover:text-accent",
                 )}
               >
                 {item.label}
@@ -76,7 +79,7 @@ export function NavBar() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-1 px-1 py-3 text-xs font-medium text-subtext0",
-                  active && "text-accent"
+                  active && "text-accent",
                 )}
               >
                 <Icon aria-hidden className="size-5" />

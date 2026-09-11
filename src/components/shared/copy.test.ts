@@ -51,7 +51,7 @@ describe("copy — auditoría de promesas en segundo plano", () => {
       for (const pattern of BACKGROUND_PROMISE_PATTERNS) {
         expect(
           text,
-          `copy prohibido («${text}» no debe prometer ejecución en segundo plano)`
+          `copy prohibido («${text}» no debe prometer ejecución en segundo plano)`,
         ).not.toMatch(pattern);
       }
     }
