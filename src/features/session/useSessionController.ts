@@ -9,6 +9,8 @@
 // está en el motor; aquí solo hay suscripciones y efectos secundarios.
 
 import { useEffect, useRef, useState } from "react";
+import { cancelScheduledCues, schedulePhaseCues } from "@/lib/audio/beepSynth";
+import { resumeIfSuspended } from "@/lib/audio/context";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
 import { SESSION_STATUS } from "@/lib/timer/types";
@@ -107,6 +109,40 @@ export interface SessionControllerApi {
 }
 
 /**
+ * Programación de cues de audio (U10 — diseño §6.3). Disparadores: arranque,
+ * reanudación y cambio de fase (cambios de estado/índice del store) y retorno
+ * de visibilidad (`rescheduleSignal` — el reloj del contexto pudo congelarse
+ * en iOS); la pausa cancela (no se deben beeps mientras pausada). El cuerpo
+ * lee la verdad FRESCA del store (getState) para anclar la conversión
+ * activo-ms → reloj del contexto en el momento exacto del efecto; las
+ * dependencias SOLO controlan cuándo re-programar — el ticker (250 ms) no
+ * re-programa: los beeps ya viven en el reloj del contexto.
+ */
+export function useCueScheduler(rescheduleSignal: number): void {
+  const state = useSessionStore((s) => s.state);
+  const status = useSessionStore((s) => s.view?.status ?? null);
+  const phaseIndex = useSessionStore((s) => s.view?.phase?.index ?? null);
+
+  useEffect(() => {
+    const { state, view } = useSessionStore.getState();
+    if (state === null || view === null) {
+      cancelScheduledCues(); // sesión descartada: silencio total
+      return;
+    }
+    if (view.status === SESSION_STATUS.paused) {
+      cancelScheduledCues(); // §6.3: pausa cancela lo pendiente
+      return;
+    }
+    if (view.status === SESSION_STATUS.running && view.phase !== null) {
+      void resumeIfSuspended(); // §6.1: arranque/reanudación/retorno de visibilidad
+      schedulePhaseCues(view.phase, view.elapsedActiveMs);
+    }
+    // Completada: NADA — el cue de transición final ya fue programado y suena
+    // en la frontera; cancelarlo cortaría el último beep de la sesión.
+  }, [state, status, phaseIndex, rescheduleSignal]);
+}
+
+/**
  * Cableado de completado (U8): registra en el seam U7 el callback real —
  * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
  * por modo), la añade al historial y navega a /resumen. El handler se registra
@@ -143,13 +179,18 @@ export function useSessionController(): SessionControllerApi {
     () =>
       typeof document === "undefined" || document.visibilityState === "visible",
   );
+  // Señal de re-programación de cues (U10 §6.3): se incrementa SOLO al volver a
+  // la visibilidad — obliga a re-anclar aunque la fase no haya cambiado.
+  const [rescheduleSignal, setRescheduleSignal] = useState(0);
 
   useVisibilityChange((nowVisible) => {
     setVisible(nowVisible);
     refreshView();
+    if (nowVisible) setRescheduleSignal((n) => n + 1);
   });
   useIntervalDriver(status === SESSION_STATUS.running && visible, refreshView);
   const flash = usePhaseFlash(phaseIndex);
+  useCueScheduler(rescheduleSignal);
   useCompletionObserver();
   return { flash };
 }
