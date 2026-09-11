@@ -597,3 +597,71 @@ U10–U13 sin marcar (22 tareas). Next unit: **U10 — Audio I: in-memory beeps 
 ### Structured status consumed
 
 - `applyState: ready` (44/71 complete al iniciar), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta. Attempt authority: u9-1789156891-18801 (nunca escrito a ningún archivo del repo).
+
+## U10 — Audio I: in-memory beeps (PR 10)
+
+**Branch**: `u10-audio-beeps` (from `main` @ 2b861fe). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u10-1789158512-13091 (never written to any repo file).
+
+**Status: COMPLETE.** All 5 U10 task checkboxes marked `- [x]` in `tasks.md` (implementation tasks 56/71).
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED-1 | `src/lib/audio/cues.test.ts` | `Failed to resolve import "./cues"` — Test Files 1 failed, no tests ran | 11/11 pass (5 s → 3/2/1 + transición; 2 s spec «Short phase» → 2/1; 1 s y 3 s y 4 s; guard sub-segundo; duck events enmarcan cada cue ×4 casos) |
+| GREEN-1 | `cues.ts` (planner puro + `BEEP` + `duckEventsFor`) | (mismo run) | (mismo run) |
+| RED-2 | `src/lib/audio/context.test.ts` | `Failed to resolve import "./context"` — Test Files 1 failed | 7/7 pass (null sin global; singleton perezoso ×1 instancia; importar no construye; resume suspendido/corriendo/rechaza/no-op ×4) |
+| GREEN-2 | `context.ts` | (mismo run) | (mismo run) |
+| RED-3 | `src/lib/audio/beepSynth.test.ts` (+ `src/test/fakes.ts` stubAudioContext) | `Failed to resolve import "./beepSynth"` — Test Files 1 failed | 10/10 pass. Fix intermedio honesto ×2: (a) el stub carecía de `connect`/`disconnect` → `TypeError: osc.connect is not a function`; (b) el param `gain` carecía de `setValueAtTime`/ramps → `TypeError`; y 3 expectativas MÍAS con aritmética de ancla mal derivada (elapsed/500 ms) corregidas — la implementación siempre siguió la fórmula §6.2 |
+| GREEN-3 | `beepSynth.ts` | (mismo run) | (mismo run) |
+| RED-4 | `src/features/session/sessionAudio.test.tsx` | 9/9 failed — cero blips programados (el controlador no cableaba audio): `expected [] to equal [107, 108, …]` | 9/9 pass. Fix intermedio honesto: expectativa del cruce de frontera re-derivada (elapsed 10_500 → 126.5, no 127 — la implementación era correcta) |
+| GREEN-4 | `useCueScheduler` en `useSessionController.ts` + señal de re-programación en `visibilitychange` | (mismo run) | (mismo run) |
+| TRIANGULATE | `audioDegradation.test.tsx` (2 tests) + **chequeos de mutación** como evidencia de dientes | — | 2/2 pass. Mutación 1: quitar la guarda `typeof AudioContext === "undefined"` de `context.ts` ⇒ **2 tests fallan con `ReferenceError: AudioContext is not defined`** (revertido → verde). Mutación 2: quitar el bump `setRescheduleSignal` del retorno de visibilidad ⇒ **falla el test «retorno de visibilidad…»** (revertido → verde) |
+| REFACTOR | `purity.test.ts` + auditoría de assets | — | `cues.ts` bajo PURE_MODULES (2 aserciones nuevas del guardián); cero assets de audio en el repo (find mp3/wav/ogg/m4a/flac/aac → vacío); `createOscillator` solo en `beepSynth.ts` (producción) y `fakes.ts` (test) |
+
+Safety net: baseline `pnpm test` en `main` antes de editar → **308/308** (27 archivos). Sin fallos preexistentes.
+
+Verificación final en la rama: `pnpm test` → **Test Files 32 passed (32), Tests 349 passed (349)** (+41 vs U9) · `pnpm lint` 0 errores (1 warning PREEXISTENTE de U8: `_set` en `persisted.test.ts`) · `pnpm exec tsc --noEmit` exit 0 · `pnpm build` verde (12 rutas estáticas).
+
+### Files changed
+
+- `src/lib/audio/cues.ts` — planificador PURO (§6.2): `CueEvent {atActiveMs, kind}`; `planPhaseCues(phase)` = countdown en S+D−k·1000 (k=1..min(3,⌈D/1000⌉)) + UNA transición en S+D, orden ascendente, guarda de cues antes de S; `BEEP` (const única: 880/1245 Hz, blip 80 ms, hueco 90 ms, duck 0.25/150 ms) compartida con el sintetizador y el duck; `duckEventsFor(cues)` + `cueWindowMs(kind)` — derivación pura de eventos de ducking para U11.
+- `src/lib/audio/context.ts` — ciclo de vida §6.1: `getAudioContext()` singleton perezoso (nada en top-level — SSR seguro), `null` sin Web Audio, nunca cerrado; `resumeIfSuspended()` best-effort (try/catch, solo con state suspended).
+- `src/lib/audio/beepSynth.ts` — capa impura DELGADA (§6.2): conversión ancla activo-ms → `ctx.currentTime` (`cueCtx = base + (cue.atActiveMs − elapsedActiveMs)/1000`, un par consistente por disparo), descarte de cues pasados (`≤ base`), envolvente osc/gain (sine, setValueAtTime 0.0001 → ramp pico 0.3 → ramp suelo), transición = otra frecuencia + DOBLE blip, auto-limpieza vía `onended`, `schedulePhaseCues` cancela-antes-de-derivar, `cancelScheduledCues()` best-effort, no-op total sobre null.
+- `src/features/session/useSessionController.ts` — `useCueScheduler(rescheduleSignal)` (U10): disparadores §6.3 = identidad de `state` (arranque/pausa/reanudación/stop) + `phaseIndex` (frontera) + `status` (completado-en-suspensión) + señal bump SOLO al volver a visible; el cuerpo lee verdad FRESCA (`getState()`) para anclar; pausa/descarte → cancelación; completado → NADA (el cue de transición final ya programado suena en la frontera — cancelarlo cortaría el último beep); `resumeIfSuspended()` en cada programación (§6.1). `useVisibilityChange` del controlador ahora bumpa la señal.
+- `src/test/fakes.ts` — NUEVO (§11.1): `stubAudioContext` a mano — registra osciladores (frecuencia/start/stop/cancel), gains (automatización/disconnect), `resume`, `advanceTime`, `blips()` resumen. U11/U13 extienden este archivo.
+- `src/lib/timer/purity.test.ts` — `src/lib/audio/cues.ts` añadido a PURE_MODULES (el corte puro/impuro del audio queda guardado estructuralmente).
+- Tests nuevos: `cues.test.ts` (11), `context.test.ts` (7), `beepSynth.test.ts` (10), `sessionAudio.test.tsx` (9), `audioDegradation.test.tsx` (2).
+
+### Spec → tests (audio)
+
+| Scenario | Test |
+| --- | --- |
+| Last-three-seconds convention | cues «5 s: countdown a los 3, 2, 1 + transición» + beepSynth «blips en tiempos EXACTOS» (107/108/109/110 s de contexto) + wiring «arrancar programa la primera fase» |
+| Short phase | cues «fase de 2 s: beeps a los 2 y 1 s + transición» (+ 1 s y 3 s y 4 s y guard sub-segundo) |
+| No Web Audio, no failure | context «null sin global» + beepSynth «no-op silencioso» + `audioDegradation.test.tsx` e2e: sesión 85 s COMPLETA con pausa/visibilidad/descarte → completada, UNA entrada, /resumen, sin crash (dientes probados por mutación de la guarda) |
+| Duck and restore (base U11) | duckEventsFor: cada cue enmarcado con duckDown(0.25) antes y rampBack(1) tras su ventana; ventana de transición cubre el doble blip |
+| (Diseño §6.3 re-schedule triggers) | wiring ×5: arranque/pausa-cancela/reanudación-reancla/cruce de frontera/retorno de visibilidad descartando pasado; ticker NO re-programa; completado NO cancela; stop cancela |
+
+### Decisions / deviations
+
+- **Ancla simplificada a (elapsedActiveMs ↔ ctx.currentTime)**: el diseño §6.2 describe el par wallMs↔ctxTime; como el tiempo activo y el del contexto avanzan 1:1 mientras la sesión corre, el wallMs intermedio es irrelevante para la conversión — cada disparo captura el par consistente en el momento del efecto. `schedulePhaseCues(phase, elapsedActiveMs)` documenta esto como el ancla del segmento.
+- **El completado NO cancela** (extensión honesta del contrato leída de §6.3): «pause (cancel)» está explícito; el completado no lo está — cancelar cortaría el doble blip de transición FINAL que suena justo en la frontera de detección (≤250 ms de latencia del ticker). Test «completar NO cancela» fija la semántica; los nodos pendientes se limpian solos (onended) o al próximo arranque (cancela-antes-de-derivar).
+- **Efecto sin cleanup**: devolver `cancelScheduledCues` del efecto cancelaría el cue final en la transición a «completed» (el cleanup del run anterior correría antes del no-op). La cancelación es explícita en las ramas pausa/descarte; el ticker jamás re-programa (deps = identidad de state/phaseIndex/status + señal).
+- **Fakes en `src/test/fakes.ts`** (§11.1) como pedía el tasks.md; `createFakeClock` sigue en `lib/timer/clock.ts` (decisión U4, no revertida).
+- **Stub aumentado durante GREEN-3**: el stub inicial omitía `connect/disconnect` y la automatización del AudioParam — dos TypeErrors honestos que el stub debía implementar; se documentó en la tabla de evidencia.
+- **Chequeo de mutación doble** (patrón U4/U7): guarda de null en context.ts y bump de visibilidad — ambos probados con fallos reales y revertidos.
+- Nota de herramienta: el chequeo LSP automático reportó `./context` como no resuelto varias veces tras crear `context.ts` — verificado falso tres vías: archivo en disco, `tsc --noEmit` exit 0 y la suite `context.test.ts` 7/7 en cada corrida (caché de LSP desactualizada; se disipó tras `touch`).
+
+### Remaining tasks
+
+U11–U13 sin marcar (15 tareas). Next unit: **U11 — Audio II: music import, storage, playback — PR 11** (primer sin marcar: `- [ ] RED: src/lib/storage/musicStore.test.ts`).
+
+### Workload / PR boundary
+
+- PR 10 = U10 only, branch `u10-audio-beeps` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Diff: 9 archivos (6 nuevos + 3 modificadas). Authored ≈ 1,050 líneas (implementación ≈ 480: cues 110 + context 45 + beepSynth 105 + wiring 90 + fakes 150; tests ≈ 570: 39 tests en 5 archivos). Por encima del presupuesto 400 — misma postura que U3–U9: los tests son el 54% y cubren los 3 escenarios literales del spec audio + los disparadores §6.3 + degradación e2e + mutaciones. Forecast por-unidad «Medium»; ruta auto-chain resuelta. Dentro del presupuesto del intento (2200). Se reporta para el chequeo de tamaño del orquestador.
+
+### Structured status consumed
+
+- `applyState: ready` (51/71 complete al iniciar), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta. Attempt authority: u10-1789158512-13091 (nunca escrito a ningún archivo del repo; el token sha256 no se reproduce).

@@ -164,11 +164,11 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 **Contents**: `src/lib/audio/context.ts`, `src/lib/audio/cues.ts`, `src/lib/audio/beepSynth.ts`, `stubAudioContext` in `src/test/fakes.ts`.
 **Acceptance hooks**: audio — "Last-three-seconds convention", "Short phase", "No Web Audio, no failure"; duck-event foundation for U11's "Duck and restore".
 
-- [ ] RED: `src/lib/audio/cues.test.ts` — `planPhaseCues` for a 5 s phase yields countdown cues at remaining 3, 2, 1 s plus a transition cue at the boundary; a 2 s phase yields cues at 2 and 1 s then the transition cue; `duckEventsFor` brackets every cue with duck-down and ramp-back events. <!-- sdd-owner: implementation -->
-- [ ] GREEN: `cues.ts` (pure active-time planner) + `context.ts` (lazily created singleton `getAudioContext()`, `null` when Web Audio is absent, best-effort `resumeIfSuspended()`) + `beepSynth.ts` (active-ms → `AudioContext.currentTime` conversion via the session anchor, oscillator/gain envelope scheduling, cancel + re-schedule API, no-op on `null` context). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: `stubAudioContext` fakes — beeps scheduled at exact context-clock times; countdown and transition cues acoustically distinct (different frequency + double blip); cancellation on pause; re-schedule on resume and on visibility return, dropping cues now in the past. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: full session with `AudioContext` deleted completes normally with summary and history entry and no crash (audio "No Web Audio, no failure" scenario, end-to-end). <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: keep the pure-planner / impure-synth split strict; confirm zero bundled audio assets in the repo. <!-- sdd-owner: implementation -->
+- [x] RED: `src/lib/audio/cues.test.ts` — `planPhaseCues` for a 5 s phase yields countdown cues at remaining 3, 2, 1 s plus a transition cue at the boundary; a 2 s phase yields cues at 2 and 1 s then the transition cue; `duckEventsFor` brackets every cue with duck-down and ramp-back events. <!-- sdd-owner: implementation -->
+- [x] GREEN: `cues.ts` (pure active-time planner) + `context.ts` (lazily created singleton `getAudioContext()`, `null` when Web Audio is absent, best-effort `resumeIfSuspended()`) + `beepSynth.ts` (active-ms → `AudioContext.currentTime` conversion via the session anchor, oscillator/gain envelope scheduling, cancel + re-schedule API, no-op on `null` context). <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: `stubAudioContext` fakes — beeps scheduled at exact context-clock times; countdown and transition cues acoustically distinct (different frequency + double blip); cancellation on pause; re-schedule on resume and on visibility return, dropping cues now in the past. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: full session with `AudioContext` deleted completes normally with summary and history entry and no crash (audio "No Web Audio, no failure" scenario, end-to-end). <!-- sdd-owner: implementation -->
+- [x] REFACTOR: keep the pure-planner / impure-synth split strict; confirm zero bundled audio assets in the repo. <!-- sdd-owner: implementation -->
 
 ## U11 — Audio II: music import, storage, playback — PR 11
 
