@@ -3,7 +3,9 @@
 // Header + barra de pestañas (§2.4). Ambos son componentes cliente porque
 // leen la ruta activa con `usePathname` (siempre como primera llamada, antes
 // de cualquier early-return); el shell (AppShell) permanece servidor y esta
-// es la única superficie interactiva del layout.
+// es la única superficie interactiva del layout. Navigation prefetch is
+// deliberately disabled: an offline fallback cannot satisfy speculative RSC
+// requests, while explicit user navigation remains fully cached and usable.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dumbbell, History, Home, Settings } from "lucide-react";
@@ -28,6 +30,7 @@ export function HeaderBar() {
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4">
         <Link
           href="/"
+          prefetch={false}
           className="font-mono text-sm font-bold uppercase tracking-widest text-accent"
         >
           {BRAND}
@@ -42,6 +45,7 @@ export function HeaderBar() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={false}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "text-sm font-medium text-subtext0 transition-colors hover:text-text",
@@ -76,6 +80,7 @@ export function NavBar() {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
+                prefetch={false}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-1 px-1 py-3 text-xs font-medium text-subtext0",

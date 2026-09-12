@@ -7,6 +7,10 @@ export default defineConfig({
   timeout: 30_000,
   retries: 0,
   reporter: "list",
+  use: {
+    // El smoke navega con URLs relativas (page.goto("/"), client-side nav…).
+    baseURL: "http://localhost:3000",
+  },
   projects: [
     {
       name: "chromium",
