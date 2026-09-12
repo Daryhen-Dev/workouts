@@ -5,12 +5,23 @@
 // Cada observador vive como hook pequeño y reutilizable (requisito REFACTOR de
 // tasks.md U7): U8 cablea el seam de completado, U10/U13 se cuelgan del flash de
 // transición de fase (mismo tick del orquestador), U11 re-apunta música al
-// retorno de visibilidad. El controlador SIEMPRE es delgado: toda la aritmética
-// está en el motor; aquí solo hay suscripciones y efectos secundarios.
+// retorno de visibilidad y empareja el ducking con los cues. El controlador
+// SIEMPRE es delgado: toda la aritmética está en el motor; aquí solo hay
+// suscripciones y efectos secundarios.
 
 import { useEffect, useRef, useState } from "react";
 import { cancelScheduledCues, schedulePhaseCues } from "@/lib/audio/beepSynth";
 import { resumeIfSuspended } from "@/lib/audio/context";
+import {
+  cancelDuckAutomation,
+  scheduleDuckAutomation,
+} from "@/lib/audio/duckGain";
+import {
+  pauseMusic,
+  retargetToPhase,
+  resumeMusic,
+  stopMusic,
+} from "@/lib/audio/musicPlayer";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
 import { SESSION_STATUS } from "@/lib/timer/types";
@@ -117,6 +128,11 @@ export interface SessionControllerApi {
  * activo-ms → reloj del contexto en el momento exacto del efecto; las
  * dependencias SOLO controlan cuándo re-programar — el ticker (250 ms) no
  * re-programa: los beeps ya viven en el reloj del contexto.
+ *
+ * U11: la automatización de ducking se empareja AQUÍ con los cues (mismo
+ * disparador, mismo ancla — el emparejamiento es estructural): cada vez que
+ * se programan beeps de una fase, la ganancia de la música queda programada
+ * para bajar alrededor de cada cue y restaurarse tras su ventana.
  */
 export function useCueScheduler(rescheduleSignal: number): void {
   const state = useSessionStore((s) => s.state);
@@ -127,18 +143,74 @@ export function useCueScheduler(rescheduleSignal: number): void {
     const { state, view } = useSessionStore.getState();
     if (state === null || view === null) {
       cancelScheduledCues(); // sesión descartada: silencio total
+      cancelDuckAutomation();
       return;
     }
     if (view.status === SESSION_STATUS.paused) {
       cancelScheduledCues(); // §6.3: pausa cancela lo pendiente
+      cancelDuckAutomation();
       return;
     }
     if (view.status === SESSION_STATUS.running && view.phase !== null) {
       void resumeIfSuspended(); // §6.1: arranque/reanudación/retorno de visibilidad
       schedulePhaseCues(view.phase, view.elapsedActiveMs);
+      scheduleDuckAutomation(view.phase, view.elapsedActiveMs); // U11 §6.3
     }
     // Completada: NADA — el cue de transición final ya fue programado y suena
     // en la frontera; cancelarlo cortaría el último beep de la sesión.
+  }, [state, status, phaseIndex, rescheduleSignal]);
+}
+
+/**
+ * Música por fase (U11 — diseño §6.3). Disparadores espejo de useCueScheduler:
+ * arranque/cambio de fase/retorno de visibilidad re-apuntan (la saliente para,
+ * la entrante suena desde 0 con loop); la pausa pausa el elemento y la
+ * reanudación lo REANUDA (posición preservada — spec audio: resume, no
+ * retarget); completado y descarte detienen la música (URL liberada).
+ *
+ * «Music follows the recomputed phase» (timer-correctness): al volver de una
+ * suspensión se re-apunta a la fase RECOMPUTADA — nunca a la que sonaba antes
+ * de salir. La distinción reanudación≠re-apuntado usa la transición de status
+ * previa: solo es reanudación si venimos de pausa SIN cambio de fase.
+ */
+export function useMusicDriver(rescheduleSignal: number): void {
+  const state = useSessionStore((s) => s.state);
+  const status = useSessionStore((s) => s.view?.status ?? null);
+  const phaseIndex = useSessionStore((s) => s.view?.phase?.index ?? null);
+  const lastStatus = useRef<string | null>(null);
+  const lastPhaseIndex = useRef<number | null>(null);
+
+  useEffect(() => {
+    const { view } = useSessionStore.getState();
+    if (view === null) {
+      lastStatus.current = null;
+      lastPhaseIndex.current = null;
+      stopMusic(); // descartada: silencio, URL liberada
+      return;
+    }
+    if (view.status === SESSION_STATUS.paused) {
+      lastStatus.current = view.status;
+      pauseMusic();
+      return;
+    }
+    if (view.status === SESSION_STATUS.completed) {
+      lastStatus.current = view.status;
+      stopMusic(); // camino de completado: la sesión terminó
+      return;
+    }
+    if (view.status === SESSION_STATUS.running && view.phase !== null) {
+      const venimosDePausa = lastStatus.current === SESSION_STATUS.paused;
+      const mismaFase = view.phase.index === lastPhaseIndex.current;
+      lastStatus.current = view.status;
+      lastPhaseIndex.current = view.phase.index;
+      if (venimosDePausa && mismaFase) {
+        resumeMusic(); // reanudación: posición preservada (spec audio)
+        return;
+      }
+      void retargetToPhase(view.phase);
+      return;
+    }
+    lastStatus.current = view.status;
   }, [state, status, phaseIndex, rescheduleSignal]);
 }
 
@@ -191,6 +263,7 @@ export function useSessionController(): SessionControllerApi {
   useIntervalDriver(status === SESSION_STATUS.running && visible, refreshView);
   const flash = usePhaseFlash(phaseIndex);
   useCueScheduler(rescheduleSignal);
+  useMusicDriver(rescheduleSignal); // U11: la música sigue a la fase
   useCompletionObserver();
   return { flash };
 }

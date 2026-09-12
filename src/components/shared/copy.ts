@@ -162,3 +162,35 @@ export const ROUTINES_COPY = {
    "Revisa los valores de la configuración antes de guardar la rutina",
  },
 } as const;
+
+// ——— Copy de ajustes (U11: /ajustes — biblioteca de música y asignaciones) ———
+// Los dos mensajes de error son los textos EXACTOS del spec audio
+// («Visible Import Failures»): cuota e indescodificable.
+
+export const AJUSTES_COPY = {
+ titulo: "Ajustes",
+ descripcion: "Música, notificaciones e instalación de la app.",
+ musica: {
+  titulo: "Música",
+  descripcion:
+   "Importa canciones desde tu dispositivo y asígnalas a cada tipo de fase.",
+  importar: "Importar canción",
+  importando: "Importando…",
+  vacio: "Todavía no has importado ninguna canción.",
+  quitar: "Quitar",
+  ninguna: "Ninguna",
+  asignarTitulo: "Asignar por tipo de fase",
+  clases: {
+   preparacion: "Preparación",
+   trabajo: "Trabajo",
+   descanso: "Descanso",
+   descansoLargo: "Descanso largo",
+   descansoGlobal: "Descanso global",
+  },
+ },
+ errores: {
+  quota: "No hay espacio suficiente en el dispositivo para esta canción",
+  undecodable: "El archivo no se pudo leer como audio",
+  inesperado: "No se pudo importar la canción. Inténtalo de nuevo.",
+ },
+} as const;

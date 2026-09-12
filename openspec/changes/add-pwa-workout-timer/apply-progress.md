@@ -665,3 +665,97 @@ U11–U13 sin marcar (15 tareas). Next unit: **U11 — Audio II: music import, s
 ### Structured status consumed
 
 - `applyState: ready` (51/71 complete al iniciar), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta. Attempt authority: u10-1789158512-13091 (nunca escrito a ningún archivo del repo; el token sha256 no se reproduce).
+
+## U11 — Audio II: music import, storage, playback (PR 11)
+
+**Branch**: `u11-audio-music` (from `main` @ e633700). Strict TDD active (`pnpm test` = vitest run). Attempt authority: u11-1789160958-12475 (same open attempt across the agent-error recovery; the token is never written to any repo file).
+
+**Status: COMPLETE.** All 6 U11 task checkboxes marked `- [x]` in `tasks.md` (implementation tasks 62/71).
+
+### Incident note — agent error + orchestrator recovery
+
+A previous executor process errored mid-unit (request u11-1789160958-12475, attempt 1). The work recovered/finished before this session:
+
+- `musicStore.test.ts` + `db.ts` + `musicStore.ts` (+ fake-indexeddb suite) — RED line 1 complete.
+- `settingsStore.ts` (+ tests, rehydrator registered in `storeRehydrators.ts`) — line 3 complete.
+- `duckGain.ts` (+ 7/7 tests) — implemented by the orchestrator, which also fixed a units bug in the test's `makePhase` (`startOffsetS=2_000` meant 2,000,000 ms; intent [2000,4000) required `makePhase(2, 2, 1)`).
+
+This session completed the remaining scope (lines 2, 4, 5, 6) starting from the green 378/378 baseline (32 files) and finished with everything in ONE commit on `u11-audio-music`.
+
+### TDD Cycle Evidence
+
+| Cycle | Test file | RED evidence | GREEN evidence |
+| --- | --- | --- | --- |
+| RED-1 | `src/lib/audio/musicPlayer.test.ts` (13 tests) | `Error: Failed to resolve import "./musicPlayer"` — Test Files 1 failed, no tests ran | 13/13 pass. Fix intermedio honesto ×2: (a) el stub inicial de fakes.ts no registraba `srcSets` (propiedad plana sin setter) → getter/setter; (b) `pause()` incondicional en el swap rompía cuentas exactas → pausa SOLO si hay URL saliente activa (semántica más limpia: nunca pausar lo que no suena) |
+| GREEN-1 | `src/lib/audio/musicPlayer.ts` | (mismo run) | (mismo run) |
+| RED-2 | `src/features/session/sessionMusic.test.tsx` (9 tests) | 9/9 failed — `expected "vi.fn()" to be called 1 times, but got 0 times` (el controlador no cableaba música) | 9/9 pass. Fix intermedio honesto ×2: (a) el finder del gain de duck era ambiguo (los envolventes de beeps TAMBIÉN conectan al destino) → finder semántico: el ÚNICO gain con automatización a 0.25; (b) el singleton `sharedDuckGain` persistía entre tests ligado al ctx anterior → `resetDuckGainForTests()` en beforeEach (misma convención de duckGain.test) |
+| GREEN-2 | `useMusicDriver` + ducking emparejado en `useCueScheduler` (useSessionController.ts) | (mismo run) | (mismo run) |
+| RED-3 | `src/components/settings/SettingsScreen.test.tsx` (9 tests) | `Failed to resolve import "./SettingsScreen"` — Test Files 1 failed | 9/9 pass. Fix intermedio honesto ×3: (a) el nombre de pista aparecía DUPLICADO en el DOM (fila de biblioteca Y opción del selector) → `getByText`/`findByText` veían multi-match y `waitFor` lo reintentaba hasta timeout — consultas `findAllByText`; (b) el mock de lista del test de quitar pisaba también la carga inicial → `mockResolvedValueOnce` + `mockResolvedValue`; (c) el campo `getObjectUrl` del fixture era un `Mock` sin parametrizar → TS2322 contra `Pick<MusicStore,"getObjectUrl">` → `Mock<(id: TrackId) => Promise<string>>` |
+| GREEN-3 | `ui/toast.tsx` + `SettingsScreen` + `MusicLibrary` + `TrackAssigner` + `ajustes/page.tsx` + `AJUSTES_COPY` | (mismo run) | (mismo run) |
+| REFACTOR | auditorías grep (ver abajo) | — | IDB estrictamente detrás de `MusicStore` (solo `db.ts` + `musicStore.ts` tocan IndexedDB); UNA sola entrada cliente en /ajustes (`SettingsScreen`); el jugador posee exactamente UNA URL activa (aserción de ciclo de vida: revocadas = todas menos la vigente); suite completa **409/409** (38 archivos) · `pnpm lint` 0 errores (1 warning PREEXISTENTE U8 `_set`) · `tsc --noEmit` exit 0 · `pnpm build` verde (`/ajustes` 6.33 kB) |
+
+Safety net: baseline `pnpm test` al iniciar → **378/378** (32 archivos, trabajo recuperado incluido). Sin fallos preexistentes.
+
+### Files changed
+
+Recuperados (commit junto con esta sesión — eran trabajo no versionado):
+
+- `src/lib/storage/db.ts` — IndexedDB «tiptap-workout» v1 (`trackMeta` keyPath id + `trackBlobs` out-of-line), singleton perezoso, `resetMusicDbForTests`.
+- `src/lib/storage/musicStore.ts` (+ `musicStore.test.ts` con fake-indexeddb) — pipeline §6.4 (puerta MIME → sonda de reproducibilidad con guardia de 10 s → escritura atómica en UNA transacción) + detección de cuota → `MusicImportError{quota|undecodable}`; huérfanos §7 (`removeTrack` limpia asignaciones vía `clearTrackAssignments`).
+- `src/stores/settingsStore.ts` (+ tests) — persistido v1: las CINCO asignaciones por clase de fase, `notificationsOptIn` + `installNudgeDismissedAt` (U13), `clearTrack`.
+- `src/stores/storeRehydrators.ts` — rehydrator «tiptap.settings» registrado en el gate (§2.3).
+- `src/lib/audio/duckGain.ts` (+ 7 tests) — GainNode compartido + `scheduleDuckAutomation`/`cancelDuckAutomation` con la convención de ancla de beepSynth; nota de solape §6.3 (cancela-antes-de-derivar, pares huérfanos descartados).
+
+De esta sesión:
+
+- `src/lib/audio/musicPlayer.ts` — jugador de larga vida: UN elemento `<audio>` oculto creado+cableado UNA vez (`createMediaElementSource` → duckGain cuando hay Web Audio; sin Web Audio suena directo — degradación honesta); `retargetToPhase` (saliente para → entrante desde 0 con loop; sin asignación → silencio; misma pista → reinicio desde 0 sin churn de URLs); guardia de carreras por número de secuencia (el retarget tardío pierde y SU URL se revoca); `pauseMusic`/`resumeMusic` nativos (posición preservada); `stopMusic` idempotente; no-op total sin elemento; huérfana/IDB caído → silencio sin crash. **El jugador posee EXACTAMENTE UNA URL de objeto activa** (revoca la saliente TRAS el swap).
+- `src/features/session/useSessionController.ts` — `useMusicDriver(rescheduleSignal)` (nuevo observador delgado): espejo de disparadores de useCueScheduler — arranque/cambio de fase/retorno de visibilidad re-apuntan; pausa→`pauseMusic`, reanudación→`resumeMusic` (SIN re-apuntar: distinción por transición de status previa pausa + misma fase); completado y descarte→`stopMusic`. `useCueScheduler` ahora empareja `scheduleDuckAutomation` junto a `schedulePhaseCues` (mismo disparador, mismo ancla — el emparejamiento cue↔duck es estructural) y `cancelDuckAutomation` junto a las cancelaciones.
+- `src/components/settings/SettingsScreen.tsx` — única entrada cliente de /ajustes: carga de biblioteca (efecto + señal de recarga), handlers importar/quitar, toasts de error; la importación NUNCA toca el reproductor (estructural).
+- `src/components/settings/MusicLibrary.tsx` — picker File API (input `accept="audio/*"` oculto + botón accesible), lista nombre+tamaño (`Intl.NumberFormat("es")`), quitar con `aria-label` único por pista.
+- `src/components/settings/TrackAssigner.tsx` — las CINCO clases de fase con select nativo (ui/select de U8): «Ninguna» (=null) o pista; escribe directo al settingsStore persistido.
+- `src/components/ui/toast.tsx` — **pila de toasts mínima inline** (decisión documentada: sonner NO está en el set de deps aprobado — `role="status"` + `aria-live="polite"`, auto-descarte 6 s).
+- `src/app/ajustes/page.tsx` — shell servidor (reemplaza placeholder U2): h1 + descripción + SettingsScreen; U13 añade notificaciones/instalación.
+- `src/components/shared/copy.ts` — bloque `AJUSTES_COPY` (textos de error EXACTOS del spec audio); copy.test lo re-escanea automáticamente (allowlist segundo plano sigue verde).
+- `src/test/fakes.ts` — `stubAudioElement` (registra srcSets/pausas/plays/removeAttribute + getter/setter de src) junto al `StubMediaElementSource` ya recuperado.
+- Tests nuevos de esta sesión: `musicPlayer.test.ts` (13), `sessionMusic.test.tsx` (9), `SettingsScreen.test.tsx` (9).
+
+### Spec → tests (audio + timer-correctness + local-data)
+
+| Scenario | Test |
+| --- | --- |
+| Import persists across reload | musicStore (recuperado, fake-indexeddb round-trip) + TrackAssigner «el selector refleja la asignación persistida» (settingsStore real) |
+| Assignment per phase kind | player «arranca la pista asignada desde 0 con loop» + ajustes «asignar a Trabajo persiste; Ninguna desasigna» (5 selects) |
+| Loop during a long phase | player `loop=true` + controlador «loop: dentro de la fase NO se re-apunta» (el elemento loopea; el orquestador no interfiere) |
+| Transition switches tracks | player «cambio de fase: para la saliente, arranca la entrante desde 0 y revoca SOLO la URL vieja» + controlador «cruzar una frontera re-apunta» |
+| Pause and resume with the timer | controlador «pausar pausa; reanudar REANUDA sin re-apuntar» + player «pausa/reanudación preservan la posición del elemento (nativa)» |
+| Duck and restore | controlador «el arranque programa la automatización del duck junto a los cues» (baseline 1 → ducks 0.25 → ramps 1, EXACTOS en el reloj del contexto; duckGain.test 7/7 del bloque recuperado) |
+| Quota exceeded | ajustes «cuota: toast español visible y biblioteca intacta» (texto exacto del spec) + musicStore.test recuperado (sin archivo parcial) |
+| Undecodable file | ajustes «indescodificable: toast español visible y la importación se rechaza» + musicStore.test recuperado |
+| Music follows the recomputed phase | controlador «suspensión que cruza fronteras: re-apunta a la fase RECOMPUTADA» (index 3, no la que sonaba) + «completada en suspensión → stopMusic» |
+| Running sessions unaffected (import) | ajustes «importar (éxito o fallo) NUNCA toca el reproductor» (espías del player a cero) |
+| Stop discards | controlador «detener confirmado detiene la música» |
+
+### Decisions / deviations
+
+- **`retargetToPhase(phase)` sin `elapsedActiveMs`**: el prompt del orquestador decía «API roughly» con elapsed; la automatización de ducking vive en `useCueScheduler` emparejada con los cues (mismo disparador, mismo ancla — SIEMPRE juntos, haya o no música), así que el jugador no necesita el ancla. Documentado como desviación menor de la firma «aproximada».
+- **Misma pista re-apuntada → reinicio desde 0 sin churn de URLs** (sin re-fetch ni revocación): el swap de URL solo ocurre cuando cambia la pista. La spec exige «arranca desde 0» en cada fase — se cumple seek-eando a 0.
+- **Suspensión con la MISMA fase → re-apunta igualmente** (reinicia desde 0): «the music playing is that of the recomputed current phase» — recomputar y re-apuntar SIEMPRE es el comportamiento simple y honesto; preservar posición SOLO existe en pausa/reanudación explícitas del temporizador (spec distingue ambos caminos).
+- **Completado NO re-apunta**: la rama completed del driver hace `stopMusic` (camino de completado) — y NO cancela la automatización de duck pendiente (el doble blip de transición final ya programado suena hasta el final, misma decisión de U10 para los cues).
+- **Toasts mínimos inline, no sonner** (documentado en `ui/toast.tsx`): sonner no está en el set de deps aprobado; el componente da la semántica accesible (`role="status"` + `aria-live="polite"`) con 30 líneas.
+- **`pause()` condicional en el swap** (solo si hay URL saliente): nunca pausar lo que no suena — hace las cuentas de pausa exactas y testeable el contrato «la saliente se detiene».
+- **Carreras resueltas por secuencia**: un retarget tardío (el usuario cambió de fase mientras se buscaba el blob) se descarta y SU URL se revoca — el vigente siempre es el último.
+- **Fixtures**: `vi.fn` sin parámetros tipa `mock.calls` como tuplas vacías (TS) → generic explícito `vi.fn<(phase: …) => Promise<void>>`; el repo no honra prefijo `_` en no-unused-vars (lección U8 re-confirmada).
+- **Multi-match de texto**: el nombre de pista vive en dos sitios legítimos (fila + opción del selector) — `findAllByText` es la consulta correcta; el síntoma fue confuso (waitFor reintenta los multi-match hasta el timeout y reporta «Unable to find»).
+
+### Remaining tasks
+
+U12–U13 sin marcar (9 tareas). Next unit: **U12 — PWA I: manifest + service worker + offline smoke — PR 12** (primer sin marcar: `- [ ] RED (offline runner): write tests/offline.spec.ts`).
+
+### Workload / PR boundary
+
+- PR 11 = U11 only, branch `u11-audio-music` → `main` (stacked-to-main, user-confirmed; sin push/PR por este ejecutor — el orquestador los posee).
+- Diff de esta sesión + trabajo recuperado en UN commit (contrato del intento). Authored ≈ 1,290 líneas (recuperadas ≈ 640: db/musicStore/settingsStore/duckGain+tests; esta sesión ≈ 650: player 200 + controller 120 + UI 260 + copy/toast 60 + fakes 50; tests 13+9+9 incluidos). Por encima del presupuesto 400 — misma postura que U3–U10: los tests cubren los 8 escenarios literales del spec audio + «Music follows the recomputed phase» del HARD GATE + carreras/degradación. Forecast por-unidad «High»; ruta auto-chain resuelta. Dentro del presupuesto del intento (2500). Se reporta para el chequeo de tamaño del orquestador.
+
+### Structured status consumed
+
+- `applyState: ready` (58/71 complete al iniciar el intento; el estado nativo listaba las 13 líneas restantes incluyendo U12/U13 — este ejecutor implementó SOLO las 4 de U11 bajo su slice asignado), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
