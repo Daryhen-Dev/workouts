@@ -23,9 +23,12 @@ export interface StubAudioParam {
   setValueAtTimeCalls: StubParamCall[];
   linearRampToValueAtTimeCalls: StubParamCall[];
   exponentialRampToValueAtTimeCalls: StubParamCall[];
+  /** Instantes con los que se llamó cancelScheduledValues (ducking U11). */
+  cancelScheduledValuesCalls: number[];
   setValueAtTime(value: number, time: number): void;
   linearRampToValueAtTime(value: number, time: number): void;
   exponentialRampToValueAtTime(value: number, time: number): void;
+  cancelScheduledValues(cancelTime: number): void;
 }
 
 /** GainNode falso: param `gain` + conexiones/desconexiones registradas. */
@@ -50,6 +53,65 @@ export interface StubOscillatorNode {
   stop(when?: number): void;
 }
 
+/** MediaElementSource falso (U11): el elemento queda ligado al grafo vía connect. */
+export interface StubMediaElementSource {
+  element: unknown;
+  connectedTo: unknown[];
+  connect(target: unknown): void;
+}
+
+/** Elemento <audio> falso (U11): registra TODO lo que el jugador le hace. */
+export interface StubAudioElement {
+  /** Último src asignado ("" tras removeAttribute). */
+  src: string;
+  loop: boolean;
+  currentTime: number;
+  playCalls: number;
+  pauseCalls: number;
+  /** Historial de asignaciones de src (para asertar swaps en orden). */
+  srcSets: string[];
+  /** Atributos eliminados (el jugador libera el recurso con removeAttribute). */
+  removedAttributes: string[];
+  play(): Promise<void>;
+  pause(): void;
+  removeAttribute(name: string): void;
+}
+
+/** Crea el elemento audio falso — nunca reproduce nada, solo registra. */
+export function stubAudioElement(): StubAudioElement {
+  const srcSets: string[] = [];
+  const removedAttributes: string[] = [];
+  let src = "";
+  const el: StubAudioElement = {
+    // Setter: cada asignación de src queda registrada (historial de swaps).
+    get src() {
+      return src;
+    },
+    set src(value: string) {
+      src = value;
+      srcSets.push(value);
+    },
+    loop: false,
+    currentTime: 0,
+    playCalls: 0,
+    pauseCalls: 0,
+    srcSets,
+    removedAttributes,
+    play() {
+      el.playCalls += 1;
+      return Promise.resolve();
+    },
+    pause() {
+      el.pauseCalls += 1;
+    },
+    removeAttribute(name) {
+      removedAttributes.push(name);
+      if (name === "src") src = "";
+    },
+  };
+  return el;
+}
+
 /** Resumen por blip para aserciones rápidas. */
 export interface StubBlip {
   frequencyHz: number;
@@ -68,9 +130,12 @@ export interface StubAudioContext {
   destination: object;
   oscillators: StubOscillatorNode[];
   gains: StubGainNode[];
+  /** Sources de media elements creados (U11: musicPlayer → duckGain). */
+  mediaElementSources: StubMediaElementSource[];
   resumeCalls: number;
   createOscillator(): StubOscillatorNode;
   createGain(): StubGainNode;
+  createMediaElementSource(element: unknown): StubMediaElementSource;
   resume(): Promise<void>;
   /** Avanza el reloj del contexto (los nodos NO se disparan solos). */
   advanceTime(seconds: number): void;
@@ -84,6 +149,7 @@ function makeParam(): StubAudioParam {
     setValueAtTimeCalls: [],
     linearRampToValueAtTimeCalls: [],
     exponentialRampToValueAtTimeCalls: [],
+    cancelScheduledValuesCalls: [],
     setValueAtTime(value, time) {
       param.setValueAtTimeCalls.push({ value, time });
     },
@@ -93,6 +159,9 @@ function makeParam(): StubAudioParam {
     exponentialRampToValueAtTime(value, time) {
       param.exponentialRampToValueAtTimeCalls.push({ value, time });
     },
+    cancelScheduledValues(cancelTime) {
+      param.cancelScheduledValuesCalls.push(cancelTime);
+    },
   };
   return param;
 }
@@ -101,12 +170,14 @@ function makeParam(): StubAudioParam {
 export function stubAudioContext(startSeconds = 0): StubAudioContext {
   const oscillators: StubOscillatorNode[] = [];
   const gains: StubGainNode[] = [];
+  const mediaElementSources: StubMediaElementSource[] = [];
   const ctx: StubAudioContext = {
     currentTime: startSeconds,
     state: "running",
     destination: { destination: true },
     oscillators,
     gains,
+    mediaElementSources,
     resumeCalls: 0,
     createOscillator() {
       const osc: StubOscillatorNode = {
@@ -143,6 +214,17 @@ export function stubAudioContext(startSeconds = 0): StubAudioContext {
       };
       gains.push(gain);
       return gain;
+    },
+    createMediaElementSource(element) {
+      const source: StubMediaElementSource = {
+        element,
+        connectedTo: [],
+        connect(target) {
+          source.connectedTo.push(target);
+        },
+      };
+      mediaElementSources.push(source);
+      return source;
     },
     async resume() {
       ctx.resumeCalls += 1;
