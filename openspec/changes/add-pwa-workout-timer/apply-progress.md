@@ -747,9 +747,9 @@ De esta sesión:
 - **Fixtures**: `vi.fn` sin parámetros tipa `mock.calls` como tuplas vacías (TS) → generic explícito `vi.fn<(phase: …) => Promise<void>>`; el repo no honra prefijo `_` en no-unused-vars (lección U8 re-confirmada).
 - **Multi-match de texto**: el nombre de pista vive en dos sitios legítimos (fila + opción del selector) — `findAllByText` es la consulta correcta; el síntoma fue confuso (waitFor reintenta los multi-match hasta el timeout y reporta «Unable to find»).
 
-### Remaining tasks
+### Remaining tasks at U11 completion
 
-U12–U13 sin marcar (9 tareas). Next unit: **U12 — PWA I: manifest + service worker + offline smoke — PR 12** (primer sin marcar: `- [ ] RED (offline runner): write tests/offline.spec.ts`).
+En ese cierre, U12–U13 estaban sin marcar (9 tareas). U12 se completó en la sección siguiente; U13 es ahora la próxima unidad, con 5 tareas pendientes.
 
 ### Workload / PR boundary
 
@@ -759,3 +759,51 @@ U12–U13 sin marcar (9 tareas). Next unit: **U12 — PWA I: manifest + service 
 ### Structured status consumed
 
 - `applyState: ready` (58/71 complete al iniciar el intento; el estado nativo listaba las 13 líneas restantes incluyendo U12/U13 — este ejecutor implementó SOLO las 4 de U11 bajo su slice asignado), `actionContext.mode: repo-local`, edit roots `[workspace root]`, no warnings. Review Workload Forecast: decisión ya resuelta esta sesión (auto-chain, stacked-to-main) — sin bloqueo de puerta.
+
+---
+
+## U12 — PWA I: manifest + service worker + offline smoke (three delivery PRs)
+
+**Branch**: `u12-pwa` (from `main` @ `6b65f49`). Strict TDD remains active (`pnpm test` = Vitest run). Runtime attempt authority remains external and is not recorded here.
+
+**Status: COMPLETE; delivery split pending.** The four U12 implementation checkboxes are complete in `tasks.md`; user declined the 789-line `size:exception`, so delivery is three chained review slices: **issue #12 manifest + assets (224 LOC)**, **issue #13 worker + production smoke (381 LOC)**, and **issue #14 no-SW degradation + U12 evidence (~202 LOC)**. GitHub issue and PR numbers share a sequence, so each PR number is recorded only after creation. U13 remains the only unfinished implementation unit.
+
+### Delivery slices
+
+- **PR 12 / issue #12 — manifest + launcher assets:** `src/app/manifest.ts`, `manifest.test.ts`, `scripts/generate-icons.mjs`, and the three PNGs. It is self-contained at 224 lines and deliberately makes no offline claim.
+- **PR 13 / issue #13 — worker + production smoke:** `next.config.ts`, `src/app/sw.ts`, `/offline`, navigation prefetch posture, Playwright/Vitest configuration, and `tests/offline.spec.ts`. It is 381 lines and depends on PR 12 because the smoke exercises the manifest/icons.
+- **PR 14 / issue #14 — no-SW degradation + evidence:** `capabilities.ts`, its persistence tests, U12 task state, and this evidence record. It is about 202 lines and completes U12's progressive-degradation proof.
+
+The split was chosen rather than a `size:exception`; each reviewable behavior keeps its proof. The runtime U12 attempt remains one cohesive implementation objective and will be settled only after the complete three-slice delivery is committed.
+
+### TDD and offline evidence
+
+| Phase | Evidence |
+| --- | --- |
+| RED | The first production smoke exposed two actual App Router cache gaps: the worker did not yet control initial route warm-up, and the later `router.push("/clasico")` required a distinct RSC response. The test failed until both were covered. |
+| GREEN | Added the Metadata API manifest, 192/512/maskable PNG assets, Serwist `defaultCache` worker and `/offline` fallback, production registration, no-service-worker detection, and the dedicated production Playwright runner. |
+| TRIANGULATE | The smoke waits for service-worker control, warms document routes, `/manifest.webmanifest`, and the exact client-side Clásico transition before going offline. It proves hard navigations, an end-to-end offline workout and history entry, cached manifest/icons, a never-visited-route fallback, and zero failed requests. |
+| REFACTOR | `reloadOnOnline: false` protects the non-persisted active workout from an automatic reconnect reload. Navigation links opt out of speculative prefetch because an offline fallback cannot satisfy uncached speculative RSC requests; explicit navigation remains covered by the smoke. |
+
+### Final verification
+
+- `pnpm test` → **40 test files / 418 tests passed**. jsdom prints existing `HTMLMediaElement.pause()` notices only.
+- `pnpm lint` → no errors; one pre-existing warning in `src/lib/storage/persisted.test.ts:161` (`_set` unused), outside U12.
+- `pnpm exec tsc --noEmit` → exit 0.
+- `pnpm test:offline` → **1 Playwright production smoke passed**, after `next build && next start`.
+- Icon inspection confirms deterministic RGBA PNGs at 192×192, 512×512, and 512×512 maskable. Generated `public/sw.js` remains ignored.
+
+### Delivered files and decisions
+
+- `src/app/manifest.ts` + `manifest.test.ts`: standalone Spanish identity, Gentleman colors, standard/maskable icons, and progressive mode shortcuts.
+- `public/icons/*` + `scripts/generate-icons.mjs`: deterministic, dependency-free icon generation.
+- `src/app/sw.ts`, `src/app/offline/page.tsx`, `next.config.ts`: Serwist default App Router caching, precached offline fallback, development disablement, and no forced reconnect reload.
+- `tests/offline.spec.ts`, `playwright.config.ts`, `vitest.config.ts`: production-only R5 smoke, browser base URL, and Vitest isolation from Playwright specs.
+- `src/lib/pwa/capabilities.ts` + test: lazy SSR-safe service-worker detection and online local persistence coverage without service-worker support.
+- `src/components/layout/NavBar.tsx`: no speculative RSC prefetch while an offline fallback is active.
+
+`@serwist/sw` v9.5.12 exposes the deprecated-but-supported `installSerwist` helper rather than the class named in the design sketch. It remains the exported installation API; TypeScript emits a deprecation hint only. No custom `NetworkFirst` rule was necessary: `defaultCache` already has the correct App Router document/RSC split, and the remaining issue was the evidence-driven warm-up order and exact client transition.
+
+### Next unit
+
+After PRs 12–14, U13 — PWA II: capability integrations (5 tasks) remains pending.
