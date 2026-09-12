@@ -10,7 +10,7 @@
 
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { hasServiceWorker } from "@/lib/pwa/capabilities";
+import { hasServiceWorker, hasWakeLock } from "@/lib/pwa/capabilities";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import { HISTORY_STORAGE_KEY, addHistoryEntry } from "@/stores/historyStore";
 import {
@@ -25,6 +25,9 @@ import {
   resetMusicDbForTests,
 } from "@/lib/storage/db";
 import { MODE, type ClasicoConfig } from "@/lib/timer/types";
+
+// U13 A2b: detección Wake Lock del registro (informativa — la puerta real
+// del lock es el no-op silencioso del adaptador A1, jamás un gate).
 
 /** Config Clásico válida para las tiendas reales. */
 const CONFIG_CLASICO: ClasicoConfig = {
@@ -128,5 +131,33 @@ describe("sin service worker, la app sigue funcional en línea (persistencia)", 
     const db = await openMusicDb();
     expect(await db.count(STORE_TRACK_BLOBS)).toBe(1);
     await db.close();
+  });
+});
+
+describe("hasWakeLock — detección perezosa (SSR-segura, U13 A2b)", () => {
+  it("false en jsdom: navigator.wakeLock no existe (navegador sin Wake Lock)", () => {
+    expect("wakeLock" in navigator).toBe(false);
+    expect(hasWakeLock()).toBe(false);
+  });
+
+  it("true cuando el navegador expone wakeLock", () => {
+    Object.defineProperty(navigator, "wakeLock", {
+      value: { request: () => Promise.resolve() },
+      configurable: true,
+    });
+    try {
+      expect(hasWakeLock()).toBe(true);
+    } finally {
+      delete (navigator as { wakeLock?: unknown }).wakeLock;
+    }
+  });
+
+  it("false sin navigator (SSR): se evalúa al llamar, sin lanzar", () => {
+    vi.stubGlobal("navigator", undefined);
+    try {
+      expect(hasWakeLock()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

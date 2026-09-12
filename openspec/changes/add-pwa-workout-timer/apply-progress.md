@@ -831,3 +831,39 @@ After PRs 12–14, U13 — PWA II: capability integrations (5 tasks) remains pen
 - **Verification:** `pnpm test` 432/432 (41 files; baseline 431 + 1 contract test); `pnpm lint`, `pnpm exec tsc --noEmit`, `git diff --check`, and final TypeScript LSP diagnostics clean.
 - **Boundary:** no lifecycle wiring, no `hasWakeLock`, no A2b integration test, no browser production behavior — all belong to A2b.
 - **Workload:** 172 changed lines total (157 code/test + 15 OpenSpec evidence), inside the 220-line budget. Nothing shrunk to fit: no comments, tests, or proof text were cut.
+
+---
+
+## U13 A2b — Wake Lock registry + session lifecycle wiring
+
+**Status: COMPLETE.** A2b lands `hasWakeLock()` + `useWakeLockDriver` over the merged A2a fake; with this slice, **A2 (registry + lifecycle wiring) is complete**. B–E remain pending.
+
+### Scope delivered
+- `src/lib/pwa/capabilities.ts`: `hasWakeLock()` — lazy SSR-safe detection (false without navigator/API), informational only; it never gates the A1 controller (silent no-op per pwa spec).
+- `src/features/session/useSessionController.ts`: `useWakeLockDriver(rescheduleSignal)` composed into `useSessionController` — fresh `createWakeLockController()` per mount, disposed on unmount; running/paused → `acquire()`; completed/no-session (incl. confirmed discard) → `release()`; `onVisibleReturn()` only on the existing noninitial reschedule signal (no second visibility listener, no duplicated A1 policy/retries/dedup).
+- `src/features/session/sessionWakeLock.test.tsx` (new): integration lifecycle tests on the real A1 adapter + shared fake; `capabilities.test.ts` extended with focused `hasWakeLock()` coverage.
+
+### TDD Cycle Evidence
+
+| Phase | Evidence |
+| --- | --- |
+| Baseline | `pnpm test` 41 files / 432 tests green; focused `wakeLock.test.ts` + `capabilities.test.ts` 20/20. |
+| RED (cycle 1) | `capabilities.test.ts` +3 `hasWakeLock()` tests → `TypeError: hasWakeLock is not a function` (3 failed). |
+| GREEN (cycle 1) | `hasWakeLock()` implemented → capabilities 9/9; A1 suite 14/14 unchanged. |
+| RED (cycle 2) | `sessionWakeLock.test.tsx` 7 lifecycle tests → 6/7 failed (`requests[0]` undefined: nothing acquires yet). |
+| GREEN (cycle 2) | `useWakeLockDriver` + composition → 7/7. |
+| TRIANGULATE | Matrix covers acquire, pause-retains/resume-no-churn, visible-return re-acquire after OS release, completion, discard, unmount/fresh-remount, absent API completes; test 3 isolates the driver (status unchanged ⇒ only the reschedule signal can produce request 2). |
+| REFACTOR | Status condition collapsed to one line; no behavior change; focused suites re-run green. |
+
+### Verification
+- Focused: `vitest run src/features/session/sessionWakeLock.test.tsx src/lib/pwa/` → 3 files / 30 tests passed.
+- `pnpm test` → **42 files / 442 tests passed** (baseline 432 + 3 capability + 7 lifecycle).
+- `pnpm lint` → 0 errors (pre-existing `persisted.test.ts:161` `_set` warning only).
+- `pnpm exec tsc --noEmit` → exit 0. LSP diagnostics tooling unavailable in this executor session; project-wide `tsc --noEmit` covers every edited TS/TSX file.
+- `git diff --check` → clean.
+
+### Scope boundary / non-goals
+No vibration/badge/Media Session/install/notification code (slices B–E); no changes to A1 `wakeLock.ts` or `src/test/fakes.ts` exports; no second visibility listener; no retry/race logic outside A1; `hasWakeLock()` is informational and does not gate the session.
+
+### Workload
+Final changed lines vs `origin/main` including both OpenSpec artifacts: 317 of 400 — one cohesive work unit; no size exception needed. PR boundary: A2b only, branch `feat/pwa-wake-lock-wiring-a2b`.
