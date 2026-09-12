@@ -199,16 +199,18 @@ GitHub issue and PR numbers share one sequence, so the actual PR numbers are rec
 - [x] TRIANGULATE: run `pnpm test:offline` against the production build and record the output; if any route/RSC case is uncached, add the single explicit `NetworkFirst` runtime rule from design §8.2 and re-run until green (R5 closed by evidence, not assumption). <!-- sdd-owner: implementation -->
 - [x] TRIANGULATE: no-service-worker browsers — `hasServiceWorker()` false skips registration (feature-gated) and the app remains fully functional online with localStorage + IndexedDB persistence (unit test). <!-- sdd-owner: implementation -->
 
-## U13 — PWA II: capability integrations — PR 13
+## U13 — PWA II: capability integrations — six sequential PRs
 
-**Contents**: `src/lib/pwa/capabilities.ts`, `wakeLock.ts`, `mediaSession.ts`, `vibration.ts`, `notifications.ts`, `badging.ts`, `install.ts`, `src/components/settings/InstallCard.tsx`, `NotificationsCard.tsx`; controller + HomeScreen wiring; final copy audit.
+**Delivery plan:** A1 is the race-safe Wake Lock adapter; A2 owns the capability registry + session lifecycle wiring; B–E own vibration/badge, Media Session, install/notifications, and degradation/copy closure. Each slice keeps behavior and proof together.
+**Contents across slices**: `src/lib/pwa/capabilities.ts`, `wakeLock.ts`, `mediaSession.ts`, `vibration.ts`, `notifications.ts`, `badging.ts`, `install.ts`, settings cards, controller/HomeScreen wiring, and the final copy audit.
 **Acceptance hooks**: pwa — "All capabilities unavailable", "Chromium install flow", "iOS manual path explained", "Lock held, re-acquired, released", "Unsupported platforms skip silently", "Lock-screen pause pauses the timer", "Beep-only degradation", "Paired cues on Android", "No-op on iOS", "Permission only from a gesture", "Foreground completion suppresses the OS notification", "Badge lifecycle on Chromium", "No badge elsewhere"; timer-correctness — "Copy does not overpromise"; ui-design — "Copy audit" complete.
 
-- [ ] RED: `src/lib/pwa/capabilities.test.ts` plus per-module tests — every capability module (wakeLock, mediaSession, vibration, notifications, badging, install) is a silent no-op (no throw) when its browser API global is deleted; detection helpers evaluate lazily and never touch `navigator`/`window` at module top level (SSR-safe). <!-- sdd-owner: implementation -->
-- [ ] GREEN: `capabilities.ts` detection registry + six modules exactly per the design §8.4 matrix: wakeLock (request on start running-or-paused, re-acquire on visibility return, AbortError re-request, release on end/unmount); mediaSession (metadata "Tip Tap Workout — {Mode}", play/pause/stop handlers, cleared on session end); vibration (transition pattern); notifications (permission only from the settings gesture, notify only on hidden completion, denied → no-op); badging (set on start, "II" when paused, clear on completion or stop); install (capture `beforeinstallprompt` + `prompt()`, stop offering after `appinstalled`, dismissible iOS Compartir → "Añadir a pantalla de inicio" guidance persisted via `settingsStore`). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: controller wiring — session start acquires lock + badge + media-session handlers; every phase transition fires vibration on the same orchestrator tick as the transition cue and visual flash (pairing is structural); completion and stop release everything (badge cleared on both); foreground completion suppresses the OS notification; `InstallCard` (home + ajustes) and `NotificationsCard` opt-in Switch request permission only from the gesture. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: full degradation smoke (component test) — delete every capability global and `AudioContext`, then run a complete Clásico session end to end: summary shows and exactly one history entry is recorded (pwa hard scenario + audio no-Web-Audio scenario, combined). <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: final copy audit — the `copy.ts` allowlist test covers every screen: Spanish-only app-authored strings, verbatim mode names, zero background-execution promises. <!-- sdd-owner: implementation -->
+- [x] A1: `wakeLock.ts` + focused tests — SSR-safe silent no-op, visibility-aware acquire/reacquire, idempotent release/dispose, in-flight deduplication, and generation-token stale-result release; user-approved size exception. <!-- sdd-owner: implementation -->
+- [ ] A2: lazy SSR-safe capability registry + session lifecycle wiring for the A1 adapter; cover running/paused, visible return, completion, discard, unmount, and unsupported APIs. <!-- sdd-owner: implementation -->
+- [ ] B: vibration + badge adapters and transition/session lifecycle proof. <!-- sdd-owner: implementation -->
+- [ ] C: Media Session metadata and play/pause/stop lifecycle proof. <!-- sdd-owner: implementation -->
+- [ ] D: install + notification UX, persisted guidance, and gesture-only permission proof. <!-- sdd-owner: implementation -->
+- [ ] E: all-capabilities-unavailable smoke, Spanish copy audit, and cumulative closure evidence. <!-- sdd-owner: implementation -->
 
 ---
 
