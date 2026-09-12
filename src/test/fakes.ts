@@ -10,6 +10,7 @@
 // cancelación añade una llamada stop PRECOZ. `blips().canceled` marca esa
 // condición. U11 extiende este archivo (media element source, ganancia de
 // ducking); U13 añade stubs de navigator.
+import { vi } from "vitest";
 
 /** Registro de una llamada parametrizada (valor + instante del reloj del contexto). */
 export interface StubParamCall {
@@ -243,4 +244,80 @@ export function stubAudioContext(startSeconds = 0): StubAudioContext {
     },
   };
   return ctx;
+}
+
+// Screen Wake Lock (U13 A2a): fake de plataforma extraído del test A1
+// (src/lib/pwa/wakeLock.test.ts) para reutilizarlo en A2b.
+
+/** Sentinel falso: cuenta releases y guarda listeners del evento `release`. */
+export class StubWakeLockSentinel {
+  releaseCalls = 0;
+  releaseListeners: Array<() => void> = [];
+
+  release(): Promise<void> {
+    this.releaseCalls += 1;
+    return Promise.resolve();
+  }
+
+  addEventListener(_type: "release", listener: () => void): void {
+    this.releaseListeners.push(listener);
+  }
+
+  /** El SISTEMA OPERATIVO libera el lock (dispara el evento `release`). */
+  dispatchOsRelease(): void {
+    for (const listener of [...this.releaseListeners]) listener();
+  }
+}
+
+/** Petición de wake lock registrada (type + sentinel + resolutores). */
+export interface WakeLockRequestRecord {
+  type: string;
+  sentinel: StubWakeLockSentinel;
+  resolve: () => void;
+  reject: (reason: unknown) => void;
+}
+
+/**
+ * Instala `navigator.wakeLock` con peticiones de resolución DIFERIDA: el
+ * test decide cuándo responde `request()` — así se ejercitan las carreras
+ * de peticiones en vuelo (deduplicación + token de generación, la carrera
+ * del verificador). El stub es un PROXY del navigator real que solo
+ * intercepta `wakeLock`: un `{ ...navigator }` pierde los getters (viven en
+ * `Navigator.prototype`) y `Object.create(navigator)` rompe el brand-check
+ * IDL de jsdom («not a valid instance of Navigator») — ambos hallados por
+ * el RED del contrato A2a. A2b monta React sobre este stub. Restaurar con
+ * `vi.unstubAllGlobals()` en el afterEach del test consumidor.
+ */
+export function installWakeLockFake(): { requests: WakeLockRequestRecord[] } {
+  const requests: WakeLockRequestRecord[] = [];
+  const wakeLock = {
+    request(type: string): Promise<StubWakeLockSentinel> {
+      const sentinel = new StubWakeLockSentinel();
+      return new Promise<StubWakeLockSentinel>((resolve, reject) => {
+        requests.push({
+          type,
+          sentinel,
+          resolve: () => resolve(sentinel),
+          reject,
+        });
+      });
+    },
+  };
+  const stubbed =
+    typeof navigator === "undefined"
+      ? { wakeLock }
+      : (new Proxy(navigator, {
+          get(target, prop) {
+            if (prop === "wakeLock") return wakeLock;
+            // Receiver = target: los getters IDL de jsdom exigen un
+            // `this` que sea instancia Navigator legítima.
+            return Reflect.get(target, prop);
+          },
+          has(target, prop) {
+            // Detección de features por `in` («wakeLock» in navigator).
+            return prop === "wakeLock" || Reflect.has(target, prop);
+          },
+        }) as Navigator & { wakeLock: typeof wakeLock });
+  vi.stubGlobal("navigator", stubbed);
+  return { requests };
 }

@@ -818,3 +818,16 @@ After PRs 12–14, U13 — PWA II: capability integrations (5 tasks) remains pen
 - **Verification:** `pnpm test` 41 files / 431 tests; `pnpm lint` 0 errors with one pre-existing warning; `pnpm exec tsc --noEmit` and `git diff --check` clean.
 - **Review:** the native reliability capture was unavailable (provider binding rejected before reviewer execution); the lineage was audit-abandoned with no native approval, and independent verification passed.
 - **Boundary:** A2 owns the capability registry and React session lifecycle wiring; B–E remain pending.
+
+---
+
+## U13 A2a — Shared Wake Lock test fake (approved A2 reslice)
+
+**Status: COMPLETE.** The user-approved honest reslice of the over-budget A2 delivers A2a only here; A2b and B–E remain pending and A2 overall is NOT complete.
+
+- **Extraction:** the deferred Screen Wake Lock fake local to `wakeLock.test.ts` (sentinel + request recorder + installer) moved to `src/test/fakes.ts` as `StubWakeLockSentinel` / `WakeLockRequestRecord` / `installWakeLockFake()`, ready for A2b consumption. Production code untouched; the 13 A1 tests keep their semantics verbatim.
+- **React-safe navigator preservation (contract-tested):** the shared fake installs `navigator.wakeLock` through a Proxy over the real jsdom navigator (get trap preserves the IDL getters with a valid receiver; `has` trap supports `"wakeLock" in navigator` feature detection). Two earlier approaches were caught failing by the new contract test before the fix: `{ ...navigator }` loses prototype getters (`userAgent` → `undefined`), and `Object.create(navigator)` trips jsdom's brand check («not a valid instance of Navigator»). A2b can mount React over this stub.
+- **TDD:** baseline focused run 13/13 → contract test RED (`installWakeLockFake is not a function`, then the two real preservation defects above) → GREEN (Proxy fake) → move to the shared fake → focused suite 14/14 (13 preserved + 1 contract).
+- **Verification:** `pnpm test` 432/432 (41 files; baseline 431 + 1 contract test); `pnpm lint`, `pnpm exec tsc --noEmit`, `git diff --check`, and final TypeScript LSP diagnostics clean.
+- **Boundary:** no lifecycle wiring, no `hasWakeLock`, no A2b integration test, no browser production behavior — all belong to A2b.
+- **Workload:** 172 changed lines total (157 code/test + 15 OpenSpec evidence), inside the 220-line budget. Nothing shrunk to fit: no comments, tests, or proof text were cut.
