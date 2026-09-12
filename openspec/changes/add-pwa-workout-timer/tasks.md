@@ -207,6 +207,8 @@ GitHub issue and PR numbers share one sequence, so the actual PR numbers are rec
 
 - [x] A1: `wakeLock.ts` + focused tests — SSR-safe silent no-op, visibility-aware acquire/reacquire, idempotent release/dispose, in-flight deduplication, and generation-token stale-result release; user-approved size exception. <!-- sdd-owner: implementation -->
 - [ ] A2: lazy SSR-safe capability registry + session lifecycle wiring for the A1 adapter; cover running/paused, visible return, completion, discard, unmount, and unsupported APIs. <!-- sdd-owner: implementation -->
+  - [x] A2a (approved A2 reslice): shared Wake Lock test fake extracted from the A1 test to `src/test/fakes.ts` (`installWakeLockFake` with React-safe navigator preservation, contract-tested); A1 suite green on the shared fake. <!-- sdd-owner: implementation -->
+  - [ ] A2b: capability registry + React session lifecycle wiring (consumes the shared fake). <!-- sdd-owner: implementation -->
 - [ ] B: vibration + badge adapters and transition/session lifecycle proof. <!-- sdd-owner: implementation -->
 - [ ] C: Media Session metadata and play/pause/stop lifecycle proof. <!-- sdd-owner: implementation -->
 - [ ] D: install + notification UX, persisted guidance, and gesture-only permission proof. <!-- sdd-owner: implementation -->

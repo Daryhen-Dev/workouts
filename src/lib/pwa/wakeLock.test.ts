@@ -2,69 +2,23 @@
 // During Active Workout»). A1 cubre SOLO el adaptador a nivel de plataforma;
 // el cableo con el ciclo de vida de la sesión es A2 (sin React aquí).
 //
-// Los fakes viven en este archivo (decisión A1: superficie mínima de review);
-// A2 los sube a `src/test/fakes.ts` cuando el controlador los consuma.
-//
-// La plataforma falsa resuelve CADA petición de forma DIFERIDA: el test decide
-// cuándo responde `request()` — así se ejercitan las carreras de peticiones en
-// vuelo (deduplicación + token de generación, la carrera del verificador).
+// El fake de plataforma vive en `src/test/fakes.ts` (extraído en A2a del
+// reslice aprobado de A2 para reutilizarlo en A2b): resuelve CADA petición
+// de forma DIFERIDA y PRESERVA el resto del navigator de jsdom (A2b monta
+// React sobre él).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+ installWakeLockFake,
+ type WakeLockRequestRecord,
+} from "../../test/fakes";
 import { createWakeLockController } from "./wakeLock";
 
-/** Sentinel falso: cuenta releases y guarda listeners del evento `release`. */
-class StubSentinel {
- releaseCalls = 0;
- releaseListeners: Array<() => void> = [];
-
- release(): Promise<void> {
-  this.releaseCalls += 1;
-  return Promise.resolve();
- }
-
- addEventListener(_type: "release", listener: () => void): void {
-  this.releaseListeners.push(listener);
- }
-
- /** El SISTEMA OPERATIVO libera el lock (dispara el evento `release`). */
- dispatchOsRelease(): void {
-  for (const listener of [...this.releaseListeners]) listener();
- }
-}
-
-interface RecordedRequest {
- type: string;
- sentinel: StubSentinel;
- resolve: () => void;
- reject: (reason: unknown) => void;
-}
-
-/** Instala `navigator.wakeLock` con peticiones de resolución diferida. */
-function installWakeLock(): { requests: RecordedRequest[] } {
- const requests: RecordedRequest[] = [];
- vi.stubGlobal("navigator", {
-  wakeLock: {
-   request(type: string): Promise<StubSentinel> {
-    const sentinel = new StubSentinel();
-    return new Promise<StubSentinel>((resolve, reject) => {
-     requests.push({
-      type,
-      sentinel,
-      resolve: () => resolve(sentinel),
-      reject,
-     });
-    });
-   },
-  },
- });
- return { requests };
-}
-
-/** Montaje estándar: plataforma falsa + controlador fresco por test. */
+/** Montaje estándar: plataforma falsa (compartida) + controlador fresco por test. */
 function setup(): {
- requests: RecordedRequest[];
+ requests: WakeLockRequestRecord[];
  controller: ReturnType<typeof createWakeLockController>;
 } {
- const { requests } = installWakeLock();
+ const { requests } = installWakeLockFake();
  return { requests, controller: createWakeLockController() };
 }
 
@@ -287,5 +241,17 @@ describe("createWakeLockController — carreras y política re-adquisición (A1)
 
   controller.release();
   expect(requests[1].sentinel.releaseCalls).toBe(1);
+ });
+});
+
+describe("installWakeLockFake — contrato del fake compartido (A2a)", () => {
+ it("preserva el resto del navigator de jsdom (A2b monta React sobre él)", () => {
+  const userAgent = navigator.userAgent; // propiedad jsdom previa a instalar
+
+  installWakeLockFake();
+
+  expect(navigator.userAgent).toBe(userAgent);
+  expect("wakeLock" in navigator).toBe(true);
+  expect(typeof navigator.wakeLock.request).toBe("function"); // lectura real del adaptador
  });
 });
