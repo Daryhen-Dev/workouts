@@ -20,3 +20,13 @@
 export function hasServiceWorker(): boolean {
  return typeof navigator !== "undefined" && "serviceWorker" in navigator;
 }
+
+/**
+ * true cuando el navegador expone la Screen Wake Lock API. En SSR y sin
+ * soporte devuelve false sin lanzar. SOLO informativa: la puerta real del
+ * lock es el no-op silencioso del adaptador (wakeLock.ts) — jamás gatea la
+ * sesión (spec pwa «Unsupported platforms skip silently»).
+ */
+export function hasWakeLock(): boolean {
+ return typeof navigator !== "undefined" && "wakeLock" in navigator;
+}

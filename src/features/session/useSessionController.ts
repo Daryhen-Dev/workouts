@@ -24,6 +24,10 @@ import {
 } from "@/lib/audio/musicPlayer";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
+import {
+ createWakeLockController,
+ type WakeLockController,
+} from "@/lib/pwa/wakeLock";
 import { SESSION_STATUS } from "@/lib/timer/types";
 import { addHistoryEntry } from "@/stores/historyStore";
 import {
@@ -215,6 +219,44 @@ export function useMusicDriver(rescheduleSignal: number): void {
 }
 
 /**
+ * Wake Lock de sesión (U13 A2b — diseño §8.4). Traducción estado de sesión →
+ * adaptador A1 con controlador FRESCO por montaje (dispose en desmontaje):
+ * running/paused → acquire(); completada/sin sesión (incluido descarte) →
+ * release(); retorno visible → onVisibleReturn() SOLO con la señal no inicial
+ * existente — sin segundo listener de visibilidad. Sin wakeLock el adaptador
+ * es no-op silencioso (spec pwa): hasWakeLock() es informativa y jamás gatea.
+ * Política de plataforma (oculto, carreras, reintentos) vive SOLO en A1.
+ */
+export function useWakeLockDriver(rescheduleSignal: number): void {
+ const status = useSessionStore((s) => s.view?.status ?? null);
+ const controllerRef = useRef<WakeLockController | null>(null);
+
+ useEffect(() => {
+  const controller = createWakeLockController();
+  controllerRef.current = controller;
+  return () => {
+   controllerRef.current = null;
+   controller.dispose();
+  };
+ }, []);
+
+ useEffect(() => {
+  const controller = controllerRef.current;
+  if (controller === null) return;
+  if (status === SESSION_STATUS.running || status === SESSION_STATUS.paused) {
+   controller.acquire(); // A1 difiere si la página está oculta
+   return;
+  }
+  controller.release(); // completada o descartada/sin sesión
+ }, [status]);
+
+ useEffect(() => {
+  if (rescheduleSignal === 0) return; // señal inicial de montaje: no es retorno
+  controllerRef.current?.onVisibleReturn();
+ }, [rescheduleSignal]);
+}
+
+/**
  * Cableado de completado (U8): registra en el seam U7 el callback real —
  * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
  * por modo), la añade al historial y navega a /resumen. El handler se registra
@@ -264,6 +306,7 @@ export function useSessionController(): SessionControllerApi {
   const flash = usePhaseFlash(phaseIndex);
   useCueScheduler(rescheduleSignal);
   useMusicDriver(rescheduleSignal); // U11: la música sigue a la fase
+  useWakeLockDriver(rescheduleSignal); // U13 A2b: pantalla despierta en sesión
   useCompletionObserver();
   return { flash };
 }
