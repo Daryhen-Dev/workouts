@@ -807,3 +807,14 @@ The split was chosen rather than a `size:exception`; each reviewable behavior ke
 ### Next unit
 
 After PRs 12–14, U13 — PWA II: capability integrations (5 tasks) remains pending.
+
+---
+
+## U13 A1 — Wake Lock adapter correctness
+
+**Status: COMPLETE.** Issue #20 tracks the standalone A1 delivery. The explicit user-approved exception covers **438 source/test lines** (`wakeLock.ts` 147 + `wakeLock.test.ts` 291) plus bounded closure evidence (maximum 475 lines).
+
+- **TDD/correctness:** 13 focused tests cover SSR/no API, rejection, visibility, unexpected release, dispose, concurrent requests, and stale-result release; the generation token prevents a late result from overwriting or orphaning a sentinel.
+- **Verification:** `pnpm test` 41 files / 431 tests; `pnpm lint` 0 errors with one pre-existing warning; `pnpm exec tsc --noEmit` and `git diff --check` clean.
+- **Review:** the native reliability capture was unavailable (provider binding rejected before reviewer execution); the lineage was audit-abandoned with no native approval, and independent verification passed.
+- **Boundary:** A2 owns the capability registry and React session lifecycle wiring; B–E remain pending.
