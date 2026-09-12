@@ -182,15 +182,22 @@ Rationale: total change is ≈10× the 400-line budget, and every adjacent unit 
 - [x] TRIANGULATE: playback behavior — track loops through a phase longer than the track; phase change stops outgoing and starts incoming assigned music (unassigned → silence except beeps); pause/resume preserves playback position; countdown beeps duck and restore music volume; after suspension the music playing is that of the recomputed current phase (controller re-target on `visibilitychange`; completed → completion path). <!-- sdd-owner: implementation -->
 - [x] REFACTOR: keep IndexedDB strictly behind the `MusicStore` interface; the player owns exactly one active object URL. <!-- sdd-owner: implementation -->
 
-## U12 — PWA I: manifest + service worker + offline smoke — PR 12
+## U12 — PWA I: manifest + service worker + offline smoke — three delivery PRs
 
-**Contents**: `src/app/manifest.ts`, `public/icons/` (192, 512, maskable-512), `src/app/sw.ts`, `next.config.ts` withSerwist, `src/app/offline/page.tsx`, `tests/offline.spec.ts`, `.gitignore` for `public/sw.js`.
+**Delivery split (user-approved after the 400-line guard):**
+
+1. **Issue #12 — manifest + launcher assets**: `src/app/manifest.ts`, manifest unit tests, deterministic icon generator, and the three committed PNGs (**224 LOC**; no service worker claim).
+2. **Issue #13 — service worker + production offline smoke**: Serwist configuration and fallback, navigation prefetch posture, Playwright config/smoke, and Vitest isolation (**381 LOC**); depends on the manifest slice.
+3. **Issue #14 — no-service-worker degradation + U12 evidence**: lazy service-worker detection, persistence coverage, task completion, and delivery evidence (about **202 LOC**); depends on the offline slice.
+
+GitHub issue and PR numbers share one sequence, so the actual PR numbers are recorded only when each PR is created. Each PR retains its behavior and proof together. The split replaces a single 789-line `size:exception`; it does not change the U12 acceptance scope.
+
 **Acceptance hooks**: pwa — "Manifest is valid", "Full offline session after first load", "No service worker support", "Shortcuts where supported, absent harmlessly elsewhere"; local-data — "Offline end-to-end"; closes design risk R5 by evidence.
 
-- [ ] RED (offline runner): write `tests/offline.spec.ts` per design §8.3 — warm `/` and every route online asserting `navigator.serviceWorker.ready` and each Spanish heading; then `context.setOffline(true)`; hard-navigate each route; client-side navigate home → config → start; run a full offline Clásico session (preparación 1 s, trabajo 2 s, descanso 1 s, 1 ronda) to completion asserting `/resumen` shows mode + rondas + duration and history contains exactly one entry; assert `/manifest.webmanifest` and both icons return 200 from cache; assert no unhandled request failures. <!-- sdd-owner: implementation -->
-- [ ] GREEN: `src/app/manifest.ts` (name "Tip Tap Workout", short_name "Tip Tap", start_url "/", standalone, colors, 192 + 512 + maskable icons, shortcuts to `/clasico`, `/tabata`, `/personalizado`); commit the three PNG icons to `public/icons/`; `src/app/sw.ts` (Serwist + `defaultCache` + `/offline` document fallback, `sw.js` filtered from precache); `next.config.ts` wrapped with `withSerwist` (disabled in development); `src/app/offline/page.tsx`; gitignore the `public/sw.js` build artifact. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: run `pnpm test:offline` against the production build and record the output; if any route/RSC case is uncached, add the single explicit `NetworkFirst` runtime rule from design §8.2 and re-run until green (R5 closed by evidence, not assumption). <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: no-service-worker browsers — `hasServiceWorker()` false skips registration (feature-gated) and the app remains fully functional online with localStorage + IndexedDB persistence (unit test). <!-- sdd-owner: implementation -->
+- [x] RED (offline runner): write `tests/offline.spec.ts` per design §8.3 — warm `/` and every route online asserting `navigator.serviceWorker.ready` and each Spanish heading; then `context.setOffline(true)`; hard-navigate each route; client-side navigate home → config → start; run a full offline Clásico session (preparación 1 s, trabajo 2 s, descanso 1 s, 1 ronda) to completion asserting `/resumen` shows mode + rondas + duration and history contains exactly one entry; assert `/manifest.webmanifest` and both icons return 200 from cache; assert no unhandled request failures. <!-- sdd-owner: implementation -->
+- [x] GREEN: `src/app/manifest.ts` (name "Tip Tap Workout", short_name "Tip Tap", start_url "/", standalone, colors, 192 + 512 + maskable icons, shortcuts to `/clasico`, `/tabata`, `/personalizado`); commit the three PNG icons to `public/icons/`; `src/app/sw.ts` (Serwist + `defaultCache` + `/offline` document fallback, `sw.js` filtered from precache); `next.config.ts` wrapped with `withSerwist` (disabled in development); `src/app/offline/page.tsx`; gitignore the `public/sw.js` build artifact. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: run `pnpm test:offline` against the production build and record the output; if any route/RSC case is uncached, add the single explicit `NetworkFirst` runtime rule from design §8.2 and re-run until green (R5 closed by evidence, not assumption). <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: no-service-worker browsers — `hasServiceWorker()` false skips registration (feature-gated) and the app remains fully functional online with localStorage + IndexedDB persistence (unit test). <!-- sdd-owner: implementation -->
 
 ## U13 — PWA II: capability integrations — PR 13
 
