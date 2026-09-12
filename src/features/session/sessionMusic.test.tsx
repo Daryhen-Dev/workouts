@@ -32,9 +32,9 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   push: vi.fn(),
   // Espías del jugador (módulo entero): el cableado del controlador los llama.
-  retarget: vi.fn<
-    (phase: { kind: string; index: number }) => Promise<void>
-  >(async () => {}),
+  retarget: vi.fn<(phase: { kind: string; index: number }) => Promise<void>>(
+    async () => {},
+  ),
   pauseMusic: vi.fn(),
   resumeMusic: vi.fn(),
   stopMusic: vi.fn(),

@@ -158,8 +158,8 @@ export function useCueScheduler(rescheduleSignal: number): void {
     }
     // Completada: NADA — el cue de transición final ya fue programado y suena
     // en la frontera; cancelarlo cortaría el último beep de la sesión.
-      }, [state, status, phaseIndex, rescheduleSignal]);
-    }
+  }, [state, status, phaseIndex, rescheduleSignal]);
+}
 
 /**
  * Música por fase (U11 — diseño §6.3). Disparadores espejo de useCueScheduler:
@@ -211,8 +211,8 @@ export function useMusicDriver(rescheduleSignal: number): void {
       return;
     }
     lastStatus.current = view.status;
-      }, [state, status, phaseIndex, rescheduleSignal]);
-    }
+  }, [state, status, phaseIndex, rescheduleSignal]);
+}
 
 /**
  * Cableado de completado (U8): registra en el seam U7 el callback real —

@@ -12,7 +12,15 @@
 //
 // Ducking: NO vive aquí — la automatización de ganancia se empareja con los
 // cues en useCueScheduler (pruebas en sessionMusic.test.tsx).
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from "vitest";
 import type { ScheduledPhase, PhaseKind } from "@/lib/timer/types";
 import type { TrackId } from "@/lib/storage/musicStore";
 import {
@@ -214,7 +222,9 @@ describe("degradación — sin elemento, sin IndexedDB, carreras", () => {
       getAssignment: () => "t1",
     });
 
-    await expect(player.retargetToPhase(phaseOf("trabajo"))).resolves.toBeUndefined();
+    await expect(
+      player.retargetToPhase(phaseOf("trabajo")),
+    ).resolves.toBeUndefined();
     expect(() => {
       player.pauseMusic();
       player.resumeMusic();

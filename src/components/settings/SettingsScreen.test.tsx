@@ -15,7 +15,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AjustesPage from "@/app/ajustes/page";
 import { MUSIC_IMPORT_ERROR, type TrackMeta } from "@/lib/storage/musicStore";
 import { PHASE_KIND } from "@/lib/timer/types";
-import { clearTrackAssignments, useSettingsStore } from "@/stores/settingsStore";
+import {
+  clearTrackAssignments,
+  useSettingsStore,
+} from "@/stores/settingsStore";
 
 // Instancia del store de música mockeada (el pipeline real vive en musicStore.test).
 const storeMocks = vi.hoisted(() => ({
@@ -62,7 +65,10 @@ const meta = (id: string, name: string, sizeBytes = 1_234_567): TrackMeta => ({
   importedAt: 1_700_000_000_000,
 });
 
-const TRACKS: TrackMeta[] = [meta("track-1", "Suena.mp3"), meta("track-2", "Ritmo.ogg")];
+const TRACKS: TrackMeta[] = [
+  meta("track-1", "Suena.mp3"),
+  meta("track-2", "Ritmo.ogg"),
+];
 
 function quotaError(): Error {
   const error = new Error("cuota") as Error & { code: string };
@@ -94,14 +100,14 @@ beforeEach(() => {
     installNudgeDismissedAt: null,
   });
   storeMocks.list.mockReset().mockResolvedValue([...TRACKS]);
-  storeMocks.importTrack.mockReset().mockResolvedValue(meta("track-3", "nueva.mp3"));
-  storeMocks.removeTrack
+  storeMocks.importTrack
     .mockReset()
-    .mockImplementation(async (id: string) => {
-      // Contrato de huérfanos (§7): removeTrack limpia asignaciones — el
-      // comportamiento del STORE REAL está probado en musicStore.test.
-      clearTrackAssignments(id);
-    });
+    .mockResolvedValue(meta("track-3", "nueva.mp3"));
+  storeMocks.removeTrack.mockReset().mockImplementation(async (id: string) => {
+    // Contrato de huérfanos (§7): removeTrack limpia asignaciones — el
+    // comportamiento del STORE REAL está probado en musicStore.test.
+    clearTrackAssignments(id);
+  });
   storeMocks.getObjectUrl.mockReset();
   playerMocks.retarget.mockClear();
   playerMocks.pauseMusic.mockClear();
@@ -139,7 +145,9 @@ describe("/ajustes — shell y biblioteca", () => {
 
   it("importar una canción válida la añade a la biblioteca", async () => {
     const conNueva = [...TRACKS, meta("track-3", "nueva.mp3")];
-    storeMocks.list.mockResolvedValueOnce([...TRACKS]).mockResolvedValue(conNueva);
+    storeMocks.list
+      .mockResolvedValueOnce([...TRACKS])
+      .mockResolvedValue(conNueva);
     render(<SettingsScreen />);
     await screen.findAllByText("Suena.mp3");
 
@@ -171,9 +179,7 @@ describe("/ajustes — fallos de importación visibles (spec audio)", () => {
     expect(screen.getAllByText("Suena.mp3").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Ritmo.ogg").length).toBeGreaterThan(0);
     expect(storeMocks.removeTrack).not.toHaveBeenCalled();
-    expect(
-      await screen.queryByText("enorme.mp3"),
-    ).not.toBeInTheDocument();
+    expect(await screen.queryByText("enorme.mp3")).not.toBeInTheDocument();
   });
 
   it("indescodificable: toast español visible y la importación se rechaza", async () => {
@@ -234,7 +240,9 @@ describe("/ajustes — asignación por clase de fase (spec audio)", () => {
       target: { value: "" },
     });
 
-    expect(useSettingsStore.getState().assignments[PHASE_KIND.trabajo]).toBeNull();
+    expect(
+      useSettingsStore.getState().assignments[PHASE_KIND.trabajo],
+    ).toBeNull();
   });
 
   it("el selector refleja la asignación persistida (vuelve con la pista elegida)", async () => {
@@ -261,7 +269,9 @@ describe("/ajustes — asignación por clase de fase (spec audio)", () => {
     await waitFor(() =>
       expect(storeMocks.removeTrack).toHaveBeenCalledWith("track-1"),
     );
-    expect(useSettingsStore.getState().assignments[PHASE_KIND.trabajo]).toBeNull();
+    expect(
+      useSettingsStore.getState().assignments[PHASE_KIND.trabajo],
+    ).toBeNull();
     await waitFor(() =>
       expect(screen.queryByText("Suena.mp3")).not.toBeInTheDocument(),
     );

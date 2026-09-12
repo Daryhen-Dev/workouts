@@ -162,11 +162,11 @@ export const ROUTINES_COPY = {
    "Revisa los valores de la configuración antes de guardar la rutina",
  },
 } as const;
-    
+
 // ——— Copy de ajustes (U11: /ajustes — biblioteca de música y asignaciones) ———
 // Los dos mensajes de error son los textos EXACTOS del spec audio
 // («Visible Import Failures»): cuota e indescodificable.
-    
+
 export const AJUSTES_COPY = {
  titulo: "Ajustes",
  descripcion: "Música, notificaciones e instalación de la app.",

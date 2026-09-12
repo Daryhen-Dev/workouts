@@ -9,7 +9,10 @@ import type { TrackMeta } from "@/lib/storage/musicStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 const CLASES: ReadonlyArray<{ kind: PhaseKind; label: string }> = [
-  { kind: PHASE_KIND.preparacion, label: AJUSTES_COPY.musica.clases.preparacion },
+  {
+    kind: PHASE_KIND.preparacion,
+    label: AJUSTES_COPY.musica.clases.preparacion,
+  },
   { kind: PHASE_KIND.trabajo, label: AJUSTES_COPY.musica.clases.trabajo },
   { kind: PHASE_KIND.descanso, label: AJUSTES_COPY.musica.clases.descanso },
   {
@@ -46,7 +49,10 @@ export function TrackAssigner({ tracks }: TrackAssignerProps) {
               aria-label={label}
               value={assignments[kind] ?? ""}
               onChange={(e) =>
-                setAssignment(kind, e.target.value === "" ? null : e.target.value)
+                setAssignment(
+                  kind,
+                  e.target.value === "" ? null : e.target.value,
+                )
               }
             >
               <option value="">{AJUSTES_COPY.musica.ninguna}</option>
