@@ -13,5 +13,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["src/test/setup.ts"],
+    // Solo las pruebas colocadas en src/ (convención del repo). El smoke
+    // offline de U12 (tests/offline.spec.ts) es de Playwright y corre por
+    // `pnpm test:offline` — jsdom no puede alojar service workers.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
