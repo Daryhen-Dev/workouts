@@ -26,6 +26,7 @@ import {
 import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
 import { clearSessionBadge, setSessionBadge } from "@/lib/pwa/badging";
+import { deliverCompletionNotification } from "@/lib/pwa/notifications";
 import {
   clearSessionMediaHandlers,
   setSessionMedia,
@@ -374,6 +375,9 @@ export function useCompletionWiring(
       const entry: HistoryEntry = buildHistoryEntry(data);
       addHistoryEntry(entry);
       navigateRef.current("/resumen");
+      if (useSettingsStore.getState().notificationsOptIn) {
+        deliverCompletionNotification();
+      }
     };
     setOnComplete(onComplete);
     return () => setOnComplete(null);

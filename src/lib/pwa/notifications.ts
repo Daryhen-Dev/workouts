@@ -11,6 +11,11 @@ interface NotificationApiLike {
   requestPermission: () => Promise<unknown>;
 }
 
+interface CompletionNotificationApiLike {
+  permission: unknown;
+  new (title: string): Notification;
+}
+
 function normalizePermission(value: unknown): NotificationPermissionResult {
   return value === "granted" || value === "denied" ? value : "default";
 }
@@ -51,5 +56,31 @@ export function requestNotificationPermission(): Promise<NotificationPermissionR
     );
   } catch {
     return Promise.resolve("default");
+  }
+}
+
+/**
+ * Best-effort completion delivery. Permission remains gesture-only in the D1a
+ * adapter; this path only constructs an already-authorized notification while
+ * the app is not foregrounded. Every platform failure is intentionally silent.
+ */
+export function deliverCompletionNotification(): void {
+  try {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const NotificationApi = window.Notification as
+      | CompletionNotificationApiLike
+      | undefined;
+    if (
+      typeof NotificationApi !== "function" ||
+      NotificationApi.permission !== "granted" ||
+      document.visibilityState === "visible"
+    ) {
+      return;
+    }
+
+    new NotificationApi("Entrenamiento completado");
+  } catch {
+    // Completion must preserve history and navigation regardless of platform APIs.
   }
 }
