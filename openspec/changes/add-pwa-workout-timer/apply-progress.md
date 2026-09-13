@@ -1098,3 +1098,36 @@ Changed lines versus `HEAD`: **338** (163 tracked insertions + 1 tracked deletio
 ### Explicit non-goals retained
 
 No Settings card, Home nudge, persistence/dismissal state, installation copy, notification behavior, service-worker behavior, manifest changes, or U13 E work was introduced in D2a.
+
+---
+
+## U13 D2b — Settings installation card
+
+**Status: COMPLETE (bounded D2b slice only).** Parent D and D2 remain open until D2c implements the persisted Home nudge; U13 E remains pending/out of scope.
+
+### Scope delivered
+
+- `src/components/settings/InstallCard.tsx` is a client Settings card that subscribes only to the D2a `getInstallSnapshot` / `subscribeInstallState` seam and invokes `promptInstall()` only from the explicit Chromium CTA.
+- Installed applications and generic non-iOS browsers without an available prompt render no card. iOS renders only the manual installation guidance, even when a browser prompt snapshot is present.
+- iOS dismissal is React local state for the mounted card only. The card neither imports nor reads/writes `settingsStore` or browser persistence.
+- `AJUSTES_COPY.instalacion` centralizes the approved title, Chromium description, iOS guidance, explicit CTA, and iOS dismiss label; `SettingsScreen` composes the card adjacent to `NotificationsCard`.
+
+### TDD evidence
+
+| Cycle | Evidence |
+| --- | --- |
+| RED | `pnpm --config.verify-deps-before-run=false exec vitest run src/components/settings/InstallCard.test.tsx` failed before implementation because `src/components/settings/InstallCard.test.tsx` could not resolve `./InstallCard` (`Failed to resolve import "./InstallCard"`). |
+| GREEN | The same focused command passed after the minimum implementation: **1 test file, 4 tests**. |
+| TRIANGULATE / REFACTOR | Focused component tests prove no render-time prompt, exactly one explicit CTA call, installed hiding, generic unavailable hiding, iOS-only manual guidance despite prompt availability, and mounted-session-only dismissal with persistence and `settingsStore` access prohibited by mocks. The final component is a small external-store subscriber with deferred browser detection; no refactor beyond that focused shape was needed. |
+
+### Final validation
+
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/settings/InstallCard.test.tsx` → **1 file, 4 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/shared/copy.test.ts` → **1 file, 4 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/components/settings/InstallCard.tsx src/components/settings/InstallCard.test.tsx src/components/settings/SettingsScreen.tsx src/components/shared/copy.ts` → passed.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → passed.
+- `git diff --check HEAD -- src/components/settings/InstallCard.tsx src/components/settings/InstallCard.test.tsx src/components/settings/SettingsScreen.tsx src/components/shared/copy.ts openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+
+### Explicit non-goals retained
+
+No change to the D2a controller/API, service worker, manifest, notifications, timer/session behavior, Home UI, persisted installation nudge/dismissal, `settingsStore`, localStorage, D2c, or U13 E was introduced in D2b.
