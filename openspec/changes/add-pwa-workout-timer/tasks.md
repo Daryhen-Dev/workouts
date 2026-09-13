@@ -218,8 +218,11 @@ GitHub issue and PR numbers share one sequence, so the actual PR numbers are rec
     - [ ] D: install + notification UX, persisted guidance, and gesture-only permission proof. <!-- parent stays open until D1b and D2 -->
       - [x] D1a: notification-permission adapter + Settings opt-in control. Permission is requested only from the explicit checkbox gesture; persist `notificationsOptIn` only after `granted`. Adapter and unsupported/error paths are lazy, SSR-safe, and fail closed. D1b completion delivery and D2 installation UX remain pending/out of scope. <!-- sdd-owner: implementation -->
       - [x] D1b: completion-delivery policy and notification delivery proof — best-effort delivery is attempted only after the established natural-completion history and `/resumen` effects, reading the latest opt-in imperatively; hidden + granted constructs once, foreground/opt-out/default/denied/absent/error paths suppress silently, and it never requests permission. D2 remains pending/out of scope. <!-- sdd-owner: implementation -->
-      - [ ] D2: installation UX and persisted guidance — pending/out of scope for D1a. <!-- sdd-owner: implementation -->
-    - [ ] E: all-capabilities-unavailable smoke, Spanish copy audit, and cumulative closure evidence. <!-- sdd-owner: implementation -->
+      - [ ] D2: installation UX and persisted guidance — parent remains open until D2b and D2c complete. <!-- sdd-owner: implementation -->
+        - [x] D2a: deferred global install-prompt capture controller — SSR-safe external snapshot/subscription seam; `beforeinstallprompt` is prevented and newest event retained; explicit `promptInstall()` consumes once; `appinstalled` and standalone/iOS detection update installed state; root client capture mounts before `StoreHydrationGate`. No visible UI, persisted dismissal, installation copy, settings, notification, service-worker, or session changes. <!-- sdd-owner: implementation -->
+        - [ ] D2b: Settings install surface — pending/out of scope for D2a. <!-- sdd-owner: implementation -->
+        - [ ] D2c: persisted Home install nudge — pending/out of scope for D2a. <!-- sdd-owner: implementation -->
+    - [ ] E: all-capabilities-unavailable smoke, Spanish copy audit, and cumulative closure evidence — pending/out of scope for D2a. <!-- sdd-owner: implementation -->
 
 ---
 
