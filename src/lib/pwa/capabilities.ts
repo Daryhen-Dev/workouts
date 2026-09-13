@@ -52,3 +52,13 @@ export function hasVibration(): boolean {
 export function hasBadging(): boolean {
   return typeof navigator !== "undefined" && "setAppBadge" in navigator;
 }
+
+/**
+ * true cuando el navegador expone la Media Session API ("mediaSession" in
+ * navigator). En SSR y sin soporte devuelve false sin lanzar. SOLO informativa:
+ * la puerta real es el no-op silencioso del adaptador (mediaSession.ts) —
+ * jamás gatea la sesión (spec pwa «Beep-only degradation»).
+ */
+export function hasMediaSession(): boolean {
+  return typeof navigator !== "undefined" && "mediaSession" in navigator;
+}

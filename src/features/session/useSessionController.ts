@@ -10,6 +10,7 @@
 // suscripciones y efectos secundarios.
 
 import { useEffect, useRef, useState } from "react";
+import { BRAND, MODE_LABEL } from "@/components/shared/copy";
 import { cancelScheduledCues, schedulePhaseCues } from "@/lib/audio/beepSynth";
 import { resumeIfSuspended } from "@/lib/audio/context";
 import {
@@ -26,12 +27,17 @@ import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
 import { clearSessionBadge, setSessionBadge } from "@/lib/pwa/badging";
 import {
+  clearSessionMediaHandlers,
+  setSessionMedia,
+} from "@/lib/pwa/mediaSession";
+import {
  createWakeLockController,
  type WakeLockController,
 } from "@/lib/pwa/wakeLock";
 import { vibrateOnTransition } from "@/lib/pwa/vibration";
 import { SESSION_STATUS } from "@/lib/timer/types";
 import { addHistoryEntry } from "@/stores/historyStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import {
   useSessionStore,
   type SessionCompletionData,
@@ -300,6 +306,52 @@ export function useBadgingDriver(): void {
   useEffect(() => () => clearSessionBadge(), []); // desmontaje: sin huérfano
 }
 
+/** Artista fijo de la metadata del OS (diseño §8.4) — copy del driver, no de pantalla. */
+const MEDIA_ARTIST = "Entrenamiento";
+
+/**
+ * Controles del OS (U13 C2 — diseño §8.4, spec pwa «Media Session Controls
+ * While Music Plays»). Expone metadata + play/pause/stop SOLO mientras la
+ * sesión vive (running Y paused — el play del lock screen reanuda) y la fase
+ * vigente tiene asignación de música. PROXY ACOTADO: la asignación de la fase
+ * actual es la fuente determinista de «música activa» — sin introspección del
+ * reproductor (el fallback best effort del adaptador C1 es la frontera).
+ * Mapeo del diseño: play→resume, pause→pause, stop→stop DIRECTO (el lock
+ * screen no puede responder el diálogo de confirmación; la guarda de ruta
+ * existente navega de vuelta). Limpieza en TODO fin de cualificación:
+ * completada, descartada, fase sin asignación o desmontaje. Sin churn:
+ * ticks, pausa/reanudación y transición entre fases con música no re-registran
+ * (la metadata no depende de la fase). Sin API el driver es delgado y el
+ * no-op silencioso vive SOLO en el adaptador C1 — sesión solo-beeps intacta.
+ */
+export function useMediaSessionDriver(): void {
+  const status = useSessionStore((s) => s.view?.status ?? null);
+  const phaseKind = useSessionStore((s) => s.view?.phase?.kind ?? null);
+  const assigned = useSettingsStore((s) =>
+    phaseKind === null ? null : s.assignments[phaseKind],
+  );
+  const musicActive =
+    (status === SESSION_STATUS.running || status === SESSION_STATUS.paused) &&
+    assigned !== null;
+
+  useEffect(() => {
+    const config = useSessionStore.getState().state?.config;
+    if (!musicActive || config === null || config === undefined) {
+      clearSessionMediaHandlers(); // fin de cualificación / sin sesión
+      return;
+    }
+    setSessionMedia(
+      { title: `${BRAND} — ${MODE_LABEL[config.mode]}`, artist: MEDIA_ARTIST },
+      {
+        onPlay: () => useSessionStore.getState().resume(),
+        onPause: () => useSessionStore.getState().pause(),
+        onStop: () => useSessionStore.getState().stop(), // descarte inmediato
+      },
+    );
+  }, [musicActive]);
+  useEffect(() => () => clearSessionMediaHandlers(), []); // desmontaje
+}
+
 /**
  * Cableado de completado (U8): registra en el seam U7 el callback real —
  * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
@@ -353,6 +405,7 @@ export function useSessionController(): SessionControllerApi {
   useWakeLockDriver(rescheduleSignal); // U13 A2b: pantalla despierta en sesión
   useVibrationDriver(phaseIndex); // U13 B1: vibración emparejada al flash
   useBadgingDriver(); // U13 B2: badge de sesión activa (running y paused)
+  useMediaSessionDriver(); // U13 C2: controles del OS con música de fase
   useCompletionObserver();
   return { flash };
 }
