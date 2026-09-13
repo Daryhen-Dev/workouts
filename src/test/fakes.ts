@@ -9,7 +9,7 @@
 // programa exactamente UNA llamada stop(t) por oscilador al crearlo; una
 // cancelación añade una llamada stop PRECOZ. `blips().canceled` marca esa
 // condición. U11 extiende este archivo (media element source, ganancia de
-// ducking); U13 añade stubs de navigator.
+// ducking); U13 añade stubs de navigator (wakeLock A2a, vibration B1).
 import { vi } from "vitest";
 
 /** Registro de una llamada parametrizada (valor + instante del reloj del contexto). */
@@ -320,4 +320,35 @@ export function installWakeLockFake(): { requests: WakeLockRequestRecord[] } {
         }) as Navigator & { wakeLock: typeof wakeLock });
   vi.stubGlobal("navigator", stubbed);
   return { requests };
+}
+
+/**
+ * Fake de Vibration API (U13 B1): GRABA cada patrón solicitado para que los
+ * tests afirmen contra la constante nombrada. Mismo patrón Proxy que el fake
+ * Wake Lock (A2a): preserva los getters IDL del navigator jsdom y la detección
+ * por `in` ("vibrate" in navigator). Restaurar con `vi.unstubAllGlobals()` en
+ * el afterEach del test consumidor.
+ */
+export function installVibrationFake(): {
+  patterns: Array<number | number[]>;
+} {
+  const patterns: Array<number | number[]> = [];
+  const vibrate = (pattern: number | number[]): boolean => {
+    patterns.push(pattern);
+    return true;
+  };
+  const stubbed =
+    typeof navigator === "undefined"
+      ? { vibrate }
+      : (new Proxy(navigator, {
+          get(target, prop) {
+            if (prop === "vibrate") return vibrate;
+            return Reflect.get(target, prop);
+          },
+          has(target, prop) {
+            return prop === "vibrate" || Reflect.has(target, prop);
+          },
+        }) as Navigator & { vibrate: typeof vibrate });
+  vi.stubGlobal("navigator", stubbed);
+  return { patterns };
 }
