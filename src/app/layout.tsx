@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
+import { InstallPromptCapture } from "@/components/shared/InstallPromptCapture";
 import { StoreHydrationGate } from "@/components/shared/StoreHydrationGate";
 // Side-effect import of the global stylesheet (Tailwind v4 entry point).
 import "./globals.css";
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="bg-base font-sans text-text antialiased">
+        <InstallPromptCapture />
         <AppShell>
           <StoreHydrationGate>{children}</StoreHydrationGate>
         </AppShell>

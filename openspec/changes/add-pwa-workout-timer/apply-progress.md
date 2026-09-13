@@ -1063,3 +1063,38 @@ No completion observer, timer, visibility/session wiring, `new Notification(...)
 
 ### Boundary
 Changed lines versus `HEAD`: **338** (163 tracked insertions + 1 tracked deletion from the required stat, plus 174 lines in new `src/features/sessionNotifications.test.tsx`), within the 400-line budget. Only notification delivery and its completion seam were changed. No permission gesture, settings store/card, manual-stop behavior, timer, visibility listener, installation UX, or E work was added. D2 and E remain unimplemented.
+
+
+---
+
+## U13 D2a — Deferred install-prompt controller and global capture bridge
+
+**Status: COMPLETE (bounded D2a slice only).** D2 remains open: D2b Settings UI, D2c persisted Home nudge, and U13 E are explicitly pending/out of scope.
+
+### Scope delivered
+
+- `src/lib/pwa/install.ts` provides an SSR-safe external snapshot/subscription seam for one deferred browser install prompt and installed state.
+- `beforeinstallprompt` is captured globally, always prevented, replaces stale deferred state, and never invokes `prompt()` during setup or notification.
+- `promptInstall()` is the sole explicit-gesture seam; it consumes the captured event before calling `prompt()` and silently handles missing, malformed, or rejected `userChoice` results without claiming installation.
+- `appinstalled`, standalone display mode, and iOS `navigator.standalone` mark installed state. Strict Mode setup/cleanup/remount is reference-counted and idempotent.
+- `InstallPromptCapture` is mounted in the root layout before `AppShell` and outside `StoreHydrationGate`, so route hydration cannot delay capture.
+
+### TDD evidence
+
+| Cycle | Evidence |
+| --- | --- |
+| RED | `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/install.test.ts` failed because `src/lib/pwa/install.ts` did not exist (`Failed to resolve import "./install"`). |
+| GREEN | The same focused command passed: **1 test file, 12 tests**. |
+| TRIANGULATE / REFACTOR | Focused cases cover SSR import, prevention/capture/replacement, no setup prompt, one explicit prompt/consumption, accepted/dismissed/malformed/rejected/absent choice data, appinstalled, standalone/iOS detection, and Strict Mode listener lifecycle. No UI, session, notification, or service-worker surface was changed. |
+
+### Final validation
+
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/install.test.ts` → **1 file, 12 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/lib/pwa/install.ts src/lib/pwa/install.test.ts src/components/shared/InstallPromptCapture.tsx src/app/layout.tsx` — passed.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` — passed.
+- `git diff --check HEAD -- src/lib/pwa/install.ts src/lib/pwa/install.test.ts src/components/shared/InstallPromptCapture.tsx src/app/layout.tsx openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+- Candidate budget: **364 changed lines versus HEAD**, calculated as 44 tracked diff lines plus 320 lines in the three new files; within 400.
+
+### Explicit non-goals retained
+
+No Settings card, Home nudge, persistence/dismissal state, installation copy, notification behavior, service-worker behavior, manifest changes, or U13 E work was introduced in D2a.
