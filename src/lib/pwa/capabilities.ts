@@ -39,5 +39,16 @@ export function hasWakeLock(): boolean {
  * skip silently»; iOS no vibra y nada falla).
  */
 export function hasVibration(): boolean {
- return typeof navigator !== "undefined" && "vibrate" in navigator;
+  return typeof navigator !== "undefined" && "vibrate" in navigator;
+}
+
+/**
+ * true cuando el navegador expone la App Badging API ("setAppBadge" in
+ * navigator, familia Chromium). En SSR y sin soporte devuelve false sin
+ * lanzar. SOLO informativa: la puerta real es el no-op silencioso del
+ * adaptador (badging.ts) — jamás gatea la sesión (spec pwa «No badge
+ * elsewhere»).
+ */
+export function hasBadging(): boolean {
+  return typeof navigator !== "undefined" && "setAppBadge" in navigator;
 }

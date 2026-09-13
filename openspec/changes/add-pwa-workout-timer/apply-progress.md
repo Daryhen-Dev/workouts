@@ -903,3 +903,39 @@ No badging (B2), Media Session, notifications, install, settings/UI copy, no A1/
 
 ### Workload
 Final changed lines vs `origin/main` including both OpenSpec artifacts and untracked new files: **390 of 400** — one cohesive B1 work unit within the parent-authorized 400-line B1 attempt. PR boundary: B1 only, branch `feat/pwa-vibration-b1`.
+
+---
+
+## U13 B2 — App Badging session lifecycle (completes parent B)
+
+**Status: COMPLETE.** B2 delivers the badging adapter + status-keyed lifecycle driver ONLY; C–E remain pending. Parent B checked (B1 vibration + B2 badging).
+
+### Scope delivered
+- `src/lib/pwa/capabilities.ts`: `hasBadging()` — lazy SSR-safe, `"setAppBadge" in navigator` contract; informational, never gates the session.
+- `src/lib/pwa/badging.ts` (new): `setSessionBadge()` / `clearSessionBadge()` — SSR-safe, silent no-op without the Badging API, sync failures AND rejected promises swallowed (`Promise.resolve(...).catch`); receiver-correct `api.call(navigator)`; default badge only — the spec's pause-distinction MAY is NOT used (the design's `"II"` placeholder is invalid for the numeric API).
+- `src/features/session/useSessionController.ts`: `useBadgingDriver()` — status-keyed: running/paused → one active badge; completed or absent (`null`, incl. confirmed discard) → clear; unmount cleanup clears (no orphan badge); zero churn on pause/resume/ticker; no visibility listener, no retries, no race machinery; composed into `useSessionController`.
+- `src/test/fakes.ts`: `installBadgingFake()` — recording set/clear navigator fake using the A2a/B1 Proxy pattern (IDL getters + `in` detection preserved); `setCalls` records the contents argument (`undefined` = default badge); A2a/B1 fakes untouched.
+- Tests: `badging.test.ts` (adapter ×6), `capabilities.test.ts` +3 `hasBadging()`, `sessionBadging.test.tsx` (lifecycle ×6 on real `SessionController`).
+
+### TDD Cycle Evidence (strict RED→GREEN→TRIANGULATE→REFACTOR)
+
+| Cycle | RED evidence | GREEN evidence |
+| --- | --- | --- |
+| 1 registry | `capabilities.test.ts` +3 → `TypeError: hasBadging is not a function` (3 failed) | `hasBadging()` implemented → capabilities suite green |
+| 2 adapter | `badging.test.ts` → module `./badging` failed to resolve | `badging.ts` + `installBadgingFake` → adapter 6/6 |
+| 3 lifecycle | `sessionBadging.test.tsx` 6 tests → 6 failed (`installBadgingFake is not a function`) | `useBadgingDriver` + composition → 6/6; focused 3 files 27/27 |
+| TRIANGULATE | Mutation 1: driver keyed on raw `status` (re-set each change) → churn test failed; Mutation 2: dropped `.catch` → unhandled rejection caught; both reverted | Full matrix: start (1 default set)/pause-resume-ticker zero churn/completion ×1 clear/discard ×1 clear/unmount clear/unsupported-completes; `[undefined]` assertions prove no pause marker ever sent |
+| REFACTOR | — | Driver is 14 lines mirroring `useWakeLockDriver`'s status family; platform fallback only in adapter; focused suites re-run 12/12 |
+
+### Verification (isolated worktree `pwa-badge-b2`; `node_modules` symlinked for execution only, removed after)
+- Focused: `vitest run badging.test.ts capabilities.test.ts sessionBadging.test.tsx` → 3 files / 27 tests.
+- `pnpm test` → **46 files / 471 tests passed** (B1 baseline 456 + 15).
+- `pnpm lint` → 0 errors (pre-existing `persisted.test.ts:161` `_set` warning only).
+- `pnpm exec tsc --noEmit` → exit 0.
+- `git diff --check` → clean. pi-lens advisories only (Spanish-comment typo heuristics; SSR `typeof` guard pattern matches `capabilities.ts`/`wakeLock.ts`/`vibration.ts`).
+
+### Scope boundary / non-goals
+No phase refresh, timer changes, reload recovery, UI/copy/settings, notifications, install, Media Session, visibility listeners, retries, race machinery, or later U13 work; no Wake Lock or vibration code touched. `hasBadging()` gates nothing; badge failure never affects session behavior (core guarantee preserved).
+
+### Workload
+Code: 391 lines (120 in 4 modified tracked files + 271 in 3 new files). With both mandated OpenSpec artifact updates (40 lines): **431 lines — 31 over the 400 budget**. User explicitly approved this one-time B2 `size:exception`; no test, documentation, comment, or scope was removed to fit. PR boundary: B2 only.

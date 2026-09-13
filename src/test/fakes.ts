@@ -352,3 +352,54 @@ export function installVibrationFake(): {
   vi.stubGlobal("navigator", stubbed);
   return { patterns };
 }
+
+/**
+ * Fake de App Badging (U13 B2): GRABA cada set/clear para que los tests
+ * afirmen el ciclo de vida del badge — el argumento de set queda registrado
+ * (undefined = badge por defecto, sin marcador de pausa). Mismo patrón Proxy
+ * que los fakes Wake Lock (A2a) y vibration (B1): preserva los getters IDL
+ * del navigator jsdom y la detección por `in` ("setAppBadge" in navigator).
+ * Restaurar con `vi.unstubAllGlobals()` en el afterEach del test consumidor.
+ */
+export function installBadgingFake(): {
+  setCalls: Array<number | undefined>;
+  readonly clearCalls: number;
+} {
+  const setCalls: Array<number | undefined> = [];
+  let clears = 0;
+  const setAppBadge = (contents?: number): Promise<void> => {
+    setCalls.push(contents);
+    return Promise.resolve();
+  };
+  const clearAppBadge = (): Promise<void> => {
+    clears += 1;
+    return Promise.resolve();
+  };
+  const stubbed =
+    typeof navigator === "undefined"
+      ? { setAppBadge, clearAppBadge }
+      : (new Proxy(navigator, {
+          get(target, prop) {
+            if (prop === "setAppBadge") return setAppBadge;
+            if (prop === "clearAppBadge") return clearAppBadge;
+            return Reflect.get(target, prop);
+          },
+          has(target, prop) {
+            return (
+              prop === "setAppBadge" ||
+              prop === "clearAppBadge" ||
+              Reflect.has(target, prop)
+            );
+          },
+        }) as Navigator & {
+          setAppBadge: typeof setAppBadge;
+          clearAppBadge: typeof clearAppBadge;
+        });
+  vi.stubGlobal("navigator", stubbed);
+  return {
+    setCalls,
+    get clearCalls() {
+      return clears;
+    },
+  };
+}
