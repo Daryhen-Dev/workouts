@@ -95,7 +95,9 @@ describe("notification permission adapter", () => {
     setVisibility("hidden");
 
     expect(() => deliverCompletionNotification()).not.toThrow();
-    expect(Notification).toHaveBeenCalledTimes(1);
+    expect(Notification).toHaveBeenCalledExactlyOnceWith(
+      "Entrenamiento completado",
+    );
     expect(requestPermission).not.toHaveBeenCalled();
   });
 

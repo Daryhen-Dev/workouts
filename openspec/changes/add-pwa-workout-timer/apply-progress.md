@@ -1167,3 +1167,32 @@ No change to the D2a controller/API, service worker, manifest, notifications, ti
 ### Explicit non-goals retained
 
 No D2a install-controller, Chromium prompt, service-worker, manifest, notification, session/timer, settings card, store/schema/storage/hydration, copy, or U13 E work was changed.
+
+---
+
+## U13 E — Capability degradation, copy audit, and cumulative closure
+
+**Status: COMPLETE.** Evidence closure only; no production runtime behavior changed, and no native review or delivery is claimed.
+
+### TDD evidence
+
+- **RED:** `pnpm --config.verify-deps-before-run=false exec vitest run src/features/session/capabilityDegradation.test.tsx` failed: expected completed, received running, before the test drove the real controller refresh path.
+- **GREEN:** the same command passed: **1 file, 1 test**. A real `SessionController`, real adapters and stores, a fake clock, and real completion wiring complete a 6 s Clásico session with all optional capability APIs absent.
+- **TRIANGULATE:** probes confirm service worker, Wake Lock, Media Session, vibration, badging, and notifications unavailable; install snapshot has no prompt; opt-in is false and music assignments are null; exactly one history entry, `/resumen`, and real `CompletionSummary` rendering are asserted. Static production-surface inventory fails on unclassified app/components files and records reviewed Spanish copy without claiming regex language detection.
+- **REFACTOR:** inventory classifies centralized-copy renderers separately from reviewed copy-free/infrastructure surfaces. Exact notification constructor title is asserted as `Entrenamiento completado`.
+
+### Validation
+
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/features/session/capabilityDegradation.test.tsx` → **1 file / 1 test passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/shared/copy.test.ts` → **1 file / 6 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/notifications.test.ts` → **1 file / 11 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/features/session/audioDegradation.test.tsx` → **1 file / 2 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/features/session/sessionWakeLock.test.tsx src/features/session/sessionVibration.test.tsx src/features/session/sessionBadging.test.tsx src/features/session/sessionMediaSession.test.tsx` → **4 files / 30 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/features/session/capabilityDegradation.test.tsx src/components/shared/copy.test.ts src/lib/pwa/notifications.test.ts` → passed.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → passed.
+- `pnpm test` → **54 files / 547 tests passed**.
+- `pnpm lint` → exit 0; one pre-existing warning in `src/lib/storage/persisted.test.ts` (`_set` unused).
+- `pnpm test:offline` → **1 Chromium test passed**.
+- `git diff --check HEAD -- src/features/session/capabilityDegradation.test.tsx src/components/shared/copy.test.ts src/lib/pwa/notifications.test.ts openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+
+Candidate size: **311 changed lines**. All edits are tests or OpenSpec evidence; production behavior, adapters, controllers, install flow, notifications runtime, copy constants, and settings remain unchanged.
