@@ -18,6 +18,7 @@ import {
   musicStore,
   type TrackMeta,
 } from "@/lib/storage/musicStore";
+import { InstallCard } from "./InstallCard";
 import { MusicLibrary } from "./MusicLibrary";
 import { NotificationsCard } from "./NotificationsCard";
 import { TrackAssigner } from "./TrackAssigner";
@@ -95,6 +96,7 @@ export function SettingsScreen() {
       />
       <TrackAssigner tracks={tracks ?? []} />
       <NotificationsCard />
+      <InstallCard />
       <ToastStack toasts={toasts} />
     </div>
   );

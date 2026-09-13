@@ -194,6 +194,13 @@ export const AJUSTES_COPY = {
   etiqueta: "Notificaciones",
   noDisponible: "Las notificaciones no están disponibles en este navegador.",
  },
+ instalacion: {
+  titulo: "Instalar la app",
+  descripcionChromium: "Añádela a tu dispositivo para abrirla más rápido.",
+  iosGuia: "Usa Compartir → Añadir a pantalla de inicio.",
+  cta: "Instalar app",
+  descartarIos: "Ahora no",
+ },
  errores: {
   quota: "No hay espacio suficiente en el dispositivo para esta canción",
   undecodable: "El archivo no se pudo leer como audio",
