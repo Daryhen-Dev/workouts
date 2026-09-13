@@ -8,6 +8,7 @@
 
 import { useRouter } from "next/navigation";
 import { Layers, Play, Repeat, Timer } from "lucide-react";
+import { HomeInstallNudge } from "@/components/home/HomeInstallNudge";
 import { HOME_COPY, MODE_LABEL } from "@/components/shared/copy";
 import { MODE, type ModeId } from "@/lib/timer/types";
 import { start as sessionStart } from "@/stores/sessionStore";
@@ -104,7 +105,7 @@ export function HomeScreen() {
                     </div>
                 </section>
             )}
-            {/* Slot de nudge de instalación — U13. */}
+            <HomeInstallNudge />
         </div>
     );
 }

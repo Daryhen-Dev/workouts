@@ -1131,3 +1131,39 @@ No Settings card, Home nudge, persistence/dismissal state, installation copy, no
 ### Explicit non-goals retained
 
 No change to the D2a controller/API, service worker, manifest, notifications, timer/session behavior, Home UI, persisted installation nudge/dismissal, `settingsStore`, localStorage, D2c, or U13 E was introduced in D2b.
+
+---
+
+## U13 D2c — Persisted Home iOS install nudge
+
+**Status: COMPLETE (final D2 slice).** D2 and parent D are complete. U13 E remains pending/out of scope.
+
+### Scope delivered
+
+- `src/components/home/HomeInstallNudge.tsx` is a client component mounted only in HomeScreen's existing U13 slot.
+- It subscribes only to D2a's `getInstallSnapshot` / `subscribeInstallState` seam and reads only `installNudgeDismissedAt` / `dismissInstallNudge` from the existing settings store.
+- It renders the approved exact iOS manual-install title, guidance, and `Ahora no` action only while the app is uninstalled and no persisted dismissal exists; installed snapshot updates hide it.
+- `Ahora no` calls `dismissInstallNudge(Date.now())` exactly once, persists the non-null timestamp, and never calls `promptInstall()`; Settings `InstallCard` remains independent and component-local for its own iOS dismissal.
+
+### TDD evidence
+
+| Cycle | Evidence |
+| --- | --- |
+| RED | `pnpm --config.verify-deps-before-run=false exec vitest run src/components/home/HomeInstallNudge.test.tsx` failed before implementation: `Failed to resolve import "./HomeInstallNudge"` (1 failed suite, 0 tests). |
+| GREEN | The same focused command passed after the minimum implementation: **1 test file, 5 tests**. |
+| TRIANGULATE / REFACTOR | The focused test expanded to **6 tests** covering iOS fresh exact display, non-iOS hiding, installed initial and snapshot-update hiding, permanent real-store timestamp persistence and rehydration, Settings-card isolation, and the absence of Chromium prompting. The component remains an isolated external-store subscriber with no module-level browser reads. |
+
+### Final validation
+
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/home/HomeInstallNudge.test.tsx` → **1 file, 6 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/home/HomeScreen.test.tsx` → **1 file, 6 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/stores/settingsStore.test.ts` → **1 file, 7 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/settings/InstallCard.test.tsx` → **1 file, 4 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/components/shared/copy.test.ts` → **1 file, 4 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/components/home/HomeInstallNudge.tsx src/components/home/HomeInstallNudge.test.tsx src/components/home/HomeScreen.tsx` → passed.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → passed.
+- `git diff --check HEAD -- src/components/home/HomeInstallNudge.tsx src/components/home/HomeInstallNudge.test.tsx src/components/home/HomeScreen.tsx openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+
+### Explicit non-goals retained
+
+No D2a install-controller, Chromium prompt, service-worker, manifest, notification, session/timer, settings card, store/schema/storage/hydration, copy, or U13 E work was changed.
