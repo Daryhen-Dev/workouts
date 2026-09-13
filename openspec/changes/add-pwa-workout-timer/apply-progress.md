@@ -1006,3 +1006,32 @@ No C1 adapter/fake/test edits, no `fakes.ts`/musicPlayer/audio changes, no store
 
 ### Workload
 Changed lines vs `origin/main`, counted as insertions + deletions including the new untracked test file and both OpenSpec artifact updates: **396 of 400** (tracked: 127 insertions + 1 deletion across capabilities.ts +10, capabilities.test.ts +29, useSessionController.ts +53, tasks.md 1/1, apply-progress.md +34; untracked: sessionMediaSession.test.tsx 268) — one cohesive C2 work unit within the budget; no scope trimmed to fit. PR boundary: C2 only, branch `feat/pwa-media-session-c2`.
+
+---
+
+## U13 D1a — Notifications permission opt-in
+
+**Status: COMPLETE for D1a only.** Parent D remains open. D1a adds no notification delivery: D1b completion delivery and D2 installation UX are explicitly pending/out of scope.
+
+### Scope delivered
+- `src/lib/pwa/notifications.ts`: lazy adapter exposes support detection and best-effort permission resolution. It is SSR-safe, never evaluates browser globals at module scope, requests only while permission is `default`, never re-prompts for `granted`/`denied`, and resolves absent, synchronous, and rejected failures safely.
+- `src/components/settings/NotificationsCard.tsx`: native accessible checkbox composed in Settings. Its change handler is the sole D1a caller of `requestNotificationPermission`; enabling persists `notificationsOptIn: true` only for `granted`, while default/denied/failure/unsupported remain false. Disabling only persists false and never requests permission.
+- `copy.ts`: centralized Spanish control and honest unavailable copy. Unsupported browsers receive a disabled checkbox while the rest of Settings remains usable.
+- Tests: adapter coverage for lazy SSR/absent/error/default/granted/denied behavior; Settings coverage for render no-prompt, explicit enable, denial/default/rejection, disable, and unsupported UI.
+
+### TDD cycle evidence
+| Cycle | Evidence |
+| --- | --- |
+| RED | `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/notifications.test.ts src/components/settings/SettingsScreen.test.tsx` → **2 files failed, 6 new tests failed**: `Failed to resolve import "./notifications"`; Settings could not find the `Notificaciones` checkbox or unavailable copy. |
+| GREEN | Same focused command after implementation → **2 files passed, 22 tests passed**. |
+| TRIANGULATE / REFACTOR | Adapter error/SSR/permission-state paths and Settings unsupported/rejected/disable paths remain covered; platform policy stays in the adapter and gesture/persistence stays in the card. |
+
+### Final validation
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/capabilities.test.ts src/lib/pwa/notifications.test.ts src/components/settings/SettingsScreen.test.tsx` → **3 files passed, 43 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/lib/pwa/capabilities.ts src/lib/pwa/capabilities.test.ts src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/components/settings/NotificationsCard.tsx src/components/settings/SettingsScreen.tsx src/components/settings/SettingsScreen.test.tsx src/components/shared/copy.ts` → exit 0.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → exit 0.
+- `git diff --check -- src/lib/pwa/capabilities.ts src/lib/pwa/capabilities.test.ts src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/components/settings/NotificationsCard.tsx src/components/settings/SettingsScreen.tsx src/components/settings/SettingsScreen.test.tsx src/components/shared/copy.ts openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+- `git diff --stat HEAD -- src/lib/pwa/capabilities.ts src/lib/pwa/capabilities.test.ts src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/components/settings/NotificationsCard.tsx src/components/settings/SettingsScreen.tsx src/components/settings/SettingsScreen.test.tsx src/components/shared/copy.ts openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → tracked 163 insertions / 2 deletions; full candidate including untracked files is 361 changed lines vs `HEAD`.
+
+### Boundary
+No completion observer, timer, visibility/session wiring, `new Notification(...)`, or installation behavior was added. D1b completion delivery remains unimplemented; D2 installation remains pending.

@@ -188,6 +188,12 @@ export const AJUSTES_COPY = {
    descansoGlobal: "Descanso global",
   },
  },
+ notificaciones: {
+  titulo: "Notificaciones",
+  descripcion: "Elige si quieres activar las notificaciones de esta app.",
+  etiqueta: "Notificaciones",
+  noDisponible: "Las notificaciones no están disponibles en este navegador.",
+ },
  errores: {
   quota: "No hay espacio suficiente en el dispositivo para esta canción",
   undecodable: "El archivo no se pudo leer como audio",
