@@ -867,3 +867,39 @@ No vibration/badge/Media Session/install/notification code (slices B–E); no ch
 
 ### Workload
 Final changed lines vs `origin/main` including both OpenSpec artifacts: 317 of 400 — one cohesive work unit; no size exception needed. PR boundary: A2b only, branch `feat/pwa-wake-lock-wiring-a2b`.
+
+---
+
+## U13 B1 — Vibration transition capability (approved B/B2 reslice)
+
+**Status: COMPLETE.** User-approved reslice of parent B: B1 delivers vibration ONLY; B2 (badging) and C–E remain pending — parent B stays unchecked until B2.
+
+### Scope delivered
+- `src/lib/pwa/capabilities.ts`: `hasVibration()` — lazy SSR-safe, `"vibrate" in navigator` contract (design §8.4); informational, never gates the session.
+- `src/lib/pwa/vibration.ts` (new): `TRANSITION_PATTERN` ([80,60,80] ms — double pulse mirroring the transition beep) + `vibrateOnTransition()` — SSR-safe, silent no-op without `navigator.vibrate`, sync API failures swallowed; receiver-correct `vibrate.call(navigator, …)`.
+- `src/features/session/useSessionController.ts`: `useVibrationDriver(phaseIndex)` — same phase-index semantics as `usePhaseFlash`; one vibration per genuine non-null transition; never on mount/pause/resume/ticks/completion/discard; no visibility listener, no timer; composed into `useSessionController`.
+- `src/test/fakes.ts`: `installVibrationFake()` — recording navigator fake using the A2a Proxy pattern (IDL getters + `in` detection preserved); A2a Wake Lock fake untouched (its 14 tests green verbatim).
+- Tests: `vibration.test.ts` (adapter ×4), `capabilities.test.ts` +3 `hasVibration()`, `sessionVibration.test.tsx` (lifecycle ×7 on real `SessionController`).
+
+### TDD Cycle Evidence (strict RED→GREEN→TRIANGULATE→REFACTOR)
+
+| Cycle | RED evidence | GREEN evidence |
+| --- | --- | --- |
+| 1 registry | `capabilities.test.ts` +3 → `TypeError: hasVibration is not a function` (3 failed) | `hasVibration()` implemented → capabilities 12/12 |
+| 2 adapter | `vibration.test.ts` → `Failed to resolve import "./vibration"` | `vibration.ts` + `installVibrationFake` → vibration 4/4, wakeLock 14/14 unchanged |
+| 3 lifecycle | `sessionVibration.test.tsx` 7 tests → 4 failed (no boundary vibration); 2 no-vibration guards passed trivially and gained teeth post-GREEN | `useVibrationDriver` + composition → 7/7. Honest fixture fix: first version restarted a session inside the same mounted controller (unreachable — completion/discard navigate away and unmount); split into completion + discard tests |
+| TRIANGULATE | Mutation check: removing the `prevIndex.current` guard → **6/7 failed**; reverted → 7/7 | Full matrix: mount/boundary+flash pairing (one vibration + `data-flashing="true"`)/successive (10→40→55 s = 3×)/pause-resume-churn silence/null/discard/unsupported-completes |
+| REFACTOR | — | Driver is 10 lines mirroring `usePhaseFlash`; platform fallback only in adapter; focused suites re-run 37/37 |
+
+### Verification
+- Focused: `vitest run src/features/session/sessionVibration.test.tsx src/lib/pwa/` → 4 files / 37 tests.
+- `pnpm test` → **44 files / 456 tests passed** (baseline 442 + 14).
+- `pnpm lint` → 0 errors (pre-existing `persisted.test.ts:161` `_set` warning only).
+- `pnpm exec tsc --noEmit` → exit 0. The isolated-worktree TypeScript LSP could not resolve linked dependencies reliably; project typecheck is the final static evidence.
+- `git diff --check` → clean.
+
+### Scope boundary / non-goals
+No badging (B2), Media Session, notifications, install, settings/UI copy, no A1/A2 changes, no later U13 slices. `hasVibration()` does not gate anything; the vibration never blocks the session (pwa spec: degradation never breaks the core).
+
+### Workload
+Final changed lines vs `origin/main` including both OpenSpec artifacts and untracked new files: **390 of 400** — one cohesive B1 work unit within the parent-authorized 400-line B1 attempt. PR boundary: B1 only, branch `feat/pwa-vibration-b1`.

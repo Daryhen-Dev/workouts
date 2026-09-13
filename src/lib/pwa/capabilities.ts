@@ -30,3 +30,14 @@ export function hasServiceWorker(): boolean {
 export function hasWakeLock(): boolean {
  return typeof navigator !== "undefined" && "wakeLock" in navigator;
 }
+
+/**
+ * true cuando el navegador expone la Vibration API (contrato del diseño §8.4:
+ * "vibrate" in navigator). En SSR y sin soporte devuelve false sin lanzar.
+ * SOLO informativa: la puerta real es el no-op silencioso del adaptador
+ * (vibration.ts) — jamás gatea la sesión (spec pwa «Unsupported platforms
+ * skip silently»; iOS no vibra y nada falla).
+ */
+export function hasVibration(): boolean {
+ return typeof navigator !== "undefined" && "vibrate" in navigator;
+}

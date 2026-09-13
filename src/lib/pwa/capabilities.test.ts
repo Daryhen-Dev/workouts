@@ -10,7 +10,11 @@
 
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { hasServiceWorker, hasWakeLock } from "@/lib/pwa/capabilities";
+import {
+  hasServiceWorker,
+  hasVibration,
+  hasWakeLock,
+} from "@/lib/pwa/capabilities";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import { HISTORY_STORAGE_KEY, addHistoryEntry } from "@/stores/historyStore";
 import {
@@ -131,6 +135,34 @@ describe("sin service worker, la app sigue funcional en línea (persistencia)", 
     const db = await openMusicDb();
     expect(await db.count(STORE_TRACK_BLOBS)).toBe(1);
     await db.close();
+  });
+});
+
+describe("hasVibration — detección perezosa (SSR-segura, U13 B1)", () => {
+  it("false en jsdom: navigator.vibrate no existe (navegador sin Vibration)", () => {
+    expect("vibrate" in navigator).toBe(false);
+    expect(hasVibration()).toBe(false);
+  });
+
+  it("true cuando el navegador expone vibrate", () => {
+    Object.defineProperty(navigator, "vibrate", {
+      value: () => true,
+      configurable: true,
+    });
+    try {
+      expect(hasVibration()).toBe(true);
+    } finally {
+      delete (navigator as { vibrate?: unknown }).vibrate;
+    }
+  });
+
+  it("false sin navigator (SSR): se evalúa al llamar, sin lanzar", () => {
+    vi.stubGlobal("navigator", undefined);
+    try {
+      expect(hasVibration()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

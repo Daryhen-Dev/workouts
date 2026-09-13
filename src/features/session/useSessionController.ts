@@ -28,6 +28,7 @@ import {
  createWakeLockController,
  type WakeLockController,
 } from "@/lib/pwa/wakeLock";
+import { vibrateOnTransition } from "@/lib/pwa/vibration";
 import { SESSION_STATUS } from "@/lib/timer/types";
 import { addHistoryEntry } from "@/stores/historyStore";
 import {
@@ -257,6 +258,25 @@ export function useWakeLockDriver(rescheduleSignal: number): void {
 }
 
 /**
+ * Vibración de transición de fase (U13 B1 — diseño §8.4). MISMA semántica de
+ * índice que usePhaseFlash: una sola vibración por transición REAL del índice
+ * (jamás al montar: prevIndex nace con el índice actual; jamás en null/
+ * completada, pausa/reanudación, churn del ticker ni descarte — esos no
+ * cambian el índice). El driver es DELGADO: el fallback de plataforma (sin
+ * API, fallos síncronos) vive SOLO en el adaptador vibration.ts. Sin listener
+ * de visibilidad ni temporizador propio.
+ */
+export function useVibrationDriver(phaseIndex: number | null): void {
+  const prevIndex = useRef<number | null>(phaseIndex);
+  useEffect(() => {
+    // null (completada/sin sesión) no es transición: sin vibración.
+    if (phaseIndex === null || phaseIndex === prevIndex.current) return;
+    prevIndex.current = phaseIndex;
+    vibrateOnTransition();
+  }, [phaseIndex]);
+}
+
+/**
  * Cableado de completado (U8): registra en el seam U7 el callback real —
  * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
  * por modo), la añade al historial y navega a /resumen. El handler se registra
@@ -307,6 +327,7 @@ export function useSessionController(): SessionControllerApi {
   useCueScheduler(rescheduleSignal);
   useMusicDriver(rescheduleSignal); // U11: la música sigue a la fase
   useWakeLockDriver(rescheduleSignal); // U13 A2b: pantalla despierta en sesión
+  useVibrationDriver(phaseIndex); // U13 B1: vibración emparejada al flash
   useCompletionObserver();
   return { flash };
 }
