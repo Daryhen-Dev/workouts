@@ -1,4 +1,5 @@
 import {
+  createEvent,
   fireEvent,
   render,
   screen,
@@ -302,6 +303,63 @@ describe("PersonalizadoBuilder — shell de la ruta", () => {
 });
 
 describe("PersonalizadoBuilder — Guardar rutina (spec routines, U9)", () => {
+  it("un Enter durante composición IME no guarda ni cierra el diálogo", () => {
+    render(<PersonalizadoBuilder />);
+    addBlock("Clásico");
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar rutina" }));
+    const dialog = screen.getByRole("dialog");
+    const nameInput = within(dialog).getByLabelText("Nombre de la rutina");
+    fireEvent.change(nameInput, { target: { value: "En composición" } });
+    const composingEnter = createEvent.keyDown(nameInput, {
+      key: "Enter",
+      code: "Enter",
+      isComposing: true,
+    });
+    fireEvent(nameInput, composingEnter);
+
+    expect(composingEnter.defaultPrevented).toBe(false);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(useRoutinesStore.getState().routines).toHaveLength(0);
+  });
+
+  it("el diálogo de guardado no anida un form y sus acciones no envían el builder", async () => {
+    render(<PersonalizadoBuilder />);
+    addBlock("Clásico");
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar rutina" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.querySelector("form")).toBeNull();
+
+    fireEvent.change(within(dialog).getByLabelText("Nombre de la rutina"), {
+      target: { value: "Con clic" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(mocks.start).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar rutina" }));
+    const reopenedDialog = screen.getByRole("dialog");
+    const nameInput = within(reopenedDialog).getByLabelText("Nombre de la rutina");
+    fireEvent.change(nameInput, { target: { value: "Con Enter" } });
+    const enterEvent = createEvent.keyDown(nameInput, {
+      key: "Enter",
+      code: "Enter",
+    });
+    fireEvent(nameInput, enterEvent);
+    expect(enterEvent.defaultPrevented).toBe(true);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(mocks.start).not.toHaveBeenCalled();
+    expect(useRoutinesStore.getState().routines.map((routine) => routine.name)).toEqual([
+      "Con clic",
+      "Con Enter",
+    ]);
+  });
+
   it("guarda la secuencia completa; el plan conserva el descanso global", async () => {
     render(<PersonalizadoBuilder />);
     addBlock("Tabata");

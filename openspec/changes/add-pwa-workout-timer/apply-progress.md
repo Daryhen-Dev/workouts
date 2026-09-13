@@ -1196,3 +1196,35 @@ No D2a install-controller, Chromium prompt, service-worker, manifest, notificati
 - `git diff --check HEAD -- src/features/session/capabilityDegradation.test.tsx src/components/shared/copy.test.ts src/lib/pwa/notifications.test.ts openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
 
 Candidate size: **311 changed lines**. All edits are tests or OpenSpec evidence; production behavior, adapters, controllers, install flow, notifications runtime, copy constants, and settings remain unchanged.
+
+---
+
+## Final remediation — Personalizado routine save
+
+**Status: COMPLETE (isolated runtime correction).** This is a separate 400-line-bounded work unit from the preserved 397-line final-evidence remediation.
+
+### Cause and scope
+
+`RoutineNameDialog` rendered a native `<form>` while mounted inside `PersonalizadoBuilder`'s outer form. Chromium therefore handled saving a Personalizado routine as an invalid nested-form submission, reloading the builder before the routine persisted. The fix removes the inner form, keeps all dialog actions non-submitting, handles only non-composing Enter as an explicit save, and leaves IME composition untouched.
+
+### TDD evidence
+
+- **RED — nested form:** the focused builder regression failed before the fix because the dialog contained a descendant `<form>`; React also reported the invalid form nesting.
+- **GREEN / TRIANGULATE:** the same regression then passed for click save and controlled non-composing Enter; the builder suite passed **17 tests**.
+- **RED — IME:** a composing Enter initially prevented default, failing the new IME regression; the handler was narrowed to `!e.nativeEvent.isComposing` before it saves.
+- **GREEN / REFACTOR:** the composing Enter regression proved that composition neither prevents default nor persists or closes the dialog. The shared dialog remains form-free and preserves validation, cancel, and overwrite behavior.
+
+### Validation
+
+- `pnpm exec vitest run src/components/builder/PersonalizadoBuilder.test.tsx` → **1 file / 17 tests passed**.
+- `pnpm test` → **54 files / 549 tests passed**.
+- `pnpm lint` → exit 0; only the pre-existing `src/lib/storage/persisted.test.ts:161` `_set` warning remains.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → passed.
+- `git diff --check` → clean.
+- A temporary uncommitted integration worktree combined this 78-line runtime candidate with the separate preserved evidence candidate. Its canonical Chromium smoke passed: real WAV import, Personalizado routine save, offline start from Rutinas, completion, assigned music telemetry, summary, and exactly one history entry. The combined worktree also passed the focused capability suite and the same full validation above.
+
+### Review and delivery boundary
+
+Native review lineage `review-f826e64545ae6bbe` selected `review-reliability`, but its provider capture binding was rejected twice before reviewer execution. The user authorized formal `operator_disposition` abandonment; the native abandonment record contains zero captured results, zero findings, and no receipt. No native approval is claimed. No commit, push, PR, or merge was performed.
+
+Runtime candidate scope: `RoutineNameDialog.tsx`, `PersonalizadoBuilder.test.tsx`, and this cumulative OpenSpec evidence record. It remains separate from the 397-line evidence candidate because combining them would exceed the 400-line review budget.
