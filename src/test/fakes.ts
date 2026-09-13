@@ -403,3 +403,72 @@ export function installBadgingFake(): {
     },
   };
 }
+
+/** Handler de acción Media Session (null = limpiado). */
+export type StubMediaSessionHandler = (() => void) | null;
+
+/**
+ * Objeto navigator.mediaSession falso: graba cada asignación de metadata y
+ * cada setActionHandler (acción + handler) para que el test afirme el
+ * contrato completo del adaptador (registro exacto, limpieza, aislamiento de
+ * fallos). El test puede provocar fallos reales reescribiendo métodos del
+ * objeto expuesto.
+ */
+export interface StubMediaSession {
+  metadata: unknown;
+  setActionHandler(action: string, handler: StubMediaSessionHandler): void;
+}
+
+/**
+ * Fake de Media Session API (U13 C1): jsdom NO implementa
+ * navigator.mediaSession. Mismo patrón Proxy que los fakes Wake Lock (A2a),
+ * vibration (B1) y badging (B2): preserva los getters IDL del navigator jsdom
+ * y la detección por `in` ("mediaSession" in navigator). Restaurar con
+ * `vi.unstubAllGlobals()` en el afterEach del test consumidor.
+ */
+export function installMediaSessionFake(): {
+  /** El objeto mediaSession instalado (mutable para simular fallos). */
+  session: StubMediaSession;
+  /** Historial de asignaciones de metadata (última = actual). */
+  metadataSets: unknown[];
+  /** Historial de llamadas setActionHandler, en orden. */
+  setActionHandlerCalls: Array<{
+    action: string;
+    handler: StubMediaSessionHandler;
+  }>;
+  /** Handler vigente por acción (null = limpiado). */
+  handlers: Map<string, StubMediaSessionHandler>;
+} {
+  const metadataSets: unknown[] = [];
+  const setActionHandlerCalls: Array<{
+    action: string;
+    handler: StubMediaSessionHandler;
+  }> = [];
+  const handlers = new Map<string, StubMediaSessionHandler>();
+  const session: StubMediaSession = {
+    get metadata() {
+      return metadataSets.at(-1) ?? null;
+    },
+    set metadata(value: unknown) {
+      metadataSets.push(value);
+    },
+    setActionHandler(action, handler) {
+      setActionHandlerCalls.push({ action, handler });
+      handlers.set(action, handler);
+    },
+  };
+  const stubbed =
+    typeof navigator === "undefined"
+      ? { mediaSession: session }
+      : (new Proxy(navigator, {
+          get(target, prop) {
+            if (prop === "mediaSession") return session;
+            return Reflect.get(target, prop);
+          },
+          has(target, prop) {
+            return prop === "mediaSession" || Reflect.has(target, prop);
+          },
+        }) as Navigator & { mediaSession: StubMediaSession });
+  vi.stubGlobal("navigator", stubbed);
+  return { session, metadataSets, setActionHandlerCalls, handlers };
+}
