@@ -939,3 +939,36 @@ No phase refresh, timer changes, reload recovery, UI/copy/settings, notification
 
 ### Workload
 Code: 391 lines (120 in 4 modified tracked files + 271 in 3 new files). With both mandated OpenSpec artifact updates (40 lines): **431 lines — 31 over the 400 budget**. User explicitly approved this one-time B2 `size:exception`; no test, documentation, comment, or scope was removed to fit. PR boundary: B2 only.
+
+---
+
+## U13 C1 — Media Session adapter (approved C1/C2 reslice)
+
+**Status: COMPLETE for the C1 slice.** Isolated worktree `pwa-media-session-c` (branch `feat/pwa-media-session-c`, stacked after B2). C1 = adapter + reusable fake + contract proof ONLY; the parent C task stays open via the new C2 sub-task (driver wiring), so C is not falsely closed.
+
+### Scope delivered
+- `src/lib/pwa/mediaSession.ts` (new): `MEDIA_SESSION_ACTIONS` (exactly play/pause/stop), `setSessionMedia(metadata, handlers)` + `clearSessionMediaHandlers()` — lazy SSR-safe, silent no-op without `navigator.mediaSession` (or without `setActionHandler`), metadata best effort (real `MediaMetadata` constructor when present, plain object otherwise), per-action try/catch so ONE failing registration/clear never blocks the others, metadata failure swallowed (handlers still registered). Copy-free and store-free: title/artist inputs and onPlay/onPause/stop callbacks are parameters for the future C2 driver.
+- `src/test/fakes.ts`: `installMediaSessionFake()` — recording navigator fake using the A2a/B1/B2 Proxy pattern (IDL getters + `"mediaSession" in navigator` detection preserved); exposes the mutable `session` object (tests provoke real failures by rewriting methods), `metadataSets`, `setActionHandlerCalls`, `handlers` map. A2a/B1/B2 fakes untouched (69 insertions, 0 deletions).
+- Tests: `src/lib/pwa/mediaSession.test.ts` — 11 contract tests: no-API jsdom no-op, SSR (`navigator` undefined) no-op after import (structural SSR proof), exact play/pause/stop registration + callback wiring, `MediaMetadata` constructor path, plain-object fallback, registration per-action failure isolation, metadata-setter failure isolation, individual `null` clears, clear per-action failure isolation, re-exposition after clear (C2 can re-expose when music returns), source-scan guard (no copy/sessionStore imports, no window/document).
+
+### TDD Cycle Evidence (strict RED→GREEN→TRIANGULATE→REFACTOR)
+
+| Cycle | RED evidence | GREEN evidence |
+| --- | --- | --- |
+| RED | `vitest run src/lib/pwa/mediaSession.test.ts` → `Error: Failed to resolve import "./mediaSession"` — 1 file failed, no tests ran | — |
+| GREEN | — | adapter + fake → 10/11 (one honest arithmetic slip: re-exposition expected 6 handler calls, real contract is 3 set + 3 clear + 3 re-set = 9; assertion corrected, no production change) |
+| TRIANGULATE | Mutation check: removed all three try/catch guards → exactly the 3 failure-isolation tests fail; reverted | 11/11 incl. re-exposition + source guard |
+| REFACTOR | — | no extraction needed at this size (mirrors vibration.ts/badging.ts shape); SSR-safety structurally proven by tests importing the module then stubbing `navigator` undefined |
+
+### Verification (isolated worktree; `node_modules` symlinked for execution only, removed after)
+- Baseline before edits: `pnpm test` → 46 files / 471 tests passed.
+- Focused: `vitest run src/lib/pwa/mediaSession.test.ts` → 11/11.
+- `pnpm test` → **47 files / 482 tests passed** (+11 vs baseline). Note: in this worktree pnpm's `verify-deps-before-run` must be disabled per-invocation (`--config.verify-deps-before-run=false`) because `node_modules` is an execution-only symlink — same commands otherwise.
+- `pnpm lint` → 0 errors (pre-existing `persisted.test.ts:161` `_set` warning only).
+- `pnpm exec tsc --noEmit` → exit 0. `git diff --check` → clean.
+
+### Scope boundary / non-goals
+No capabilities registry entry (`hasMediaSession` deliberately NOT added — registry belongs to C2 per the slice contract), no SessionController/useSessionController wiring, no timer/visibility/navigation listeners, no music player changes, no metadata-timing policy (the "only while phase music is active" decision is C2's), no notification/install/settings/copy, no session store, no git/PR actions. Adapter functions return void and never gate the session (degradation never breaks).
+
+### Workload
+Changed lines vs `origin/main` including untracked new files and both OpenSpec artifact updates: **390 of 400** — one cohesive C1 work unit within the evidence goal; no scope was trimmed to fit. PR boundary: C1 only, branch `feat/pwa-media-session-c`.
