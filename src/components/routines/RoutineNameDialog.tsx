@@ -142,13 +142,7 @@ export function RoutineNameDialog({
             >
               {description}
             </p>
-            <form
-              className="mt-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                submit(false);
-              }}
-            >
+            <div className="mt-4">
               <label
                 htmlFor="rutina-nombre"
                 className="block text-sm font-medium text-subtext1"
@@ -159,6 +153,12 @@ export function RoutineNameDialog({
                 id="rutina-nombre"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    submit(false);
+                  }
+                }}
                 aria-invalid={error !== null}
                 className="mt-1.5 text-left"
                 autoFocus
@@ -172,9 +172,11 @@ export function RoutineNameDialog({
                 <Button type="button" variant="ghost" onClick={onClose}>
                   {cancelar}
                 </Button>
-                <Button type="submit">{submitLabel}</Button>
+                <Button type="button" onClick={() => submit(false)}>
+                  {submitLabel}
+                </Button>
               </div>
-            </form>
+            </div>
           </>
         )}
       </div>
