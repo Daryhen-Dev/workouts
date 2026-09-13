@@ -24,6 +24,7 @@ import {
 } from "@/lib/audio/musicPlayer";
 import { buildHistoryEntry } from "@/lib/history/entry";
 import type { HistoryEntry } from "@/lib/history/types";
+import { clearSessionBadge, setSessionBadge } from "@/lib/pwa/badging";
 import {
  createWakeLockController,
  type WakeLockController,
@@ -277,6 +278,29 @@ export function useVibrationDriver(phaseIndex: number | null): void {
 }
 
 /**
+ * Badge de la app (U13 B2 — diseño §8.4). Clave por STATUS: running/paused →
+ * UN badge de sesión activa (el MAY de distinguir la pausa NO se usa: badge
+ * por defecto, sin marcador); completada o sin sesión (incluido descarte
+ * confirmado) → clear. El desmontaje limpia (jamás un badge huérfano).
+ * Sin churn: pausa/reanudación/ticks no re-setean ni limpian. Sin Badging
+ * API el driver es delgado y el no-op silencioso vive SOLO en el adaptador
+ * (badging.ts — spec pwa «No badge elsewhere»).
+ */
+export function useBadgingDriver(): void {
+  const status = useSessionStore((s) => s.view?.status ?? null);
+  const inSession =
+    status === SESSION_STATUS.running || status === SESSION_STATUS.paused;
+  useEffect(() => {
+    if (inSession) {
+      setSessionBadge();
+      return;
+    }
+    clearSessionBadge(); // completada o descartada/sin sesión
+  }, [inSession]);
+  useEffect(() => () => clearSessionBadge(), []); // desmontaje: sin huérfano
+}
+
+/**
  * Cableado de completado (U8): registra en el seam U7 el callback real —
  * construye la HistoryEntry desde los datos del motor (conteos de esfuerzo
  * por modo), la añade al historial y navega a /resumen. El handler se registra
@@ -328,6 +352,7 @@ export function useSessionController(): SessionControllerApi {
   useMusicDriver(rescheduleSignal); // U11: la música sigue a la fase
   useWakeLockDriver(rescheduleSignal); // U13 A2b: pantalla despierta en sesión
   useVibrationDriver(phaseIndex); // U13 B1: vibración emparejada al flash
+  useBadgingDriver(); // U13 B2: badge de sesión activa (running y paused)
   useCompletionObserver();
   return { flash };
 }

@@ -11,6 +11,7 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  hasBadging,
   hasServiceWorker,
   hasVibration,
   hasWakeLock,
@@ -184,10 +185,38 @@ describe("hasWakeLock — detección perezosa (SSR-segura, U13 A2b)", () => {
     }
   });
 
+      it("false sin navigator (SSR): se evalúa al llamar, sin lanzar", () => {
+        vi.stubGlobal("navigator", undefined);
+        try {
+          expect(hasWakeLock()).toBe(false);
+        } finally {
+          vi.unstubAllGlobals();
+        }
+      });
+    });
+
+describe("hasBadging — detección perezosa (SSR-segura, U13 B2)", () => {
+  it("false en jsdom: navigator.setAppBadge no existe (navegador sin Badging)", () => {
+    expect("setAppBadge" in navigator).toBe(false);
+    expect(hasBadging()).toBe(false);
+  });
+
+  it("true cuando el navegador expone setAppBadge", () => {
+    Object.defineProperty(navigator, "setAppBadge", {
+      value: () => Promise.resolve(),
+      configurable: true,
+    });
+    try {
+      expect(hasBadging()).toBe(true);
+    } finally {
+      delete (navigator as { setAppBadge?: unknown }).setAppBadge;
+    }
+  });
+
   it("false sin navigator (SSR): se evalúa al llamar, sin lanzar", () => {
     vi.stubGlobal("navigator", undefined);
     try {
-      expect(hasWakeLock()).toBe(false);
+      expect(hasBadging()).toBe(false);
     } finally {
       vi.unstubAllGlobals();
     }
