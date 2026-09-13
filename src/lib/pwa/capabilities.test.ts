@@ -64,24 +64,36 @@ describe("hasServiceWorker — detección perezosa (SSR-segura)", () => {
     }
   });
 
-  it("importar el módulo no toca navigator en el nivel superior del módulo", async () => {
-    // SSR: el módulo debe ser importable aunque navigator no exista (la
-    // detección se evalúa al LLAMAR, nunca al importar — diseño §8.4).
-    const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
-    try {
-      Object.defineProperty(globalThis, "navigator", {
-        get: () => undefined,
-        configurable: true,
+      it("importar el módulo no toca globals del navegador en el nivel superior", async () => {
+        // SSR: el módulo debe ser importable aunque navigator/window no existan
+        // (la detección se evalúa al LLAMAR, nunca al importar — diseño §8.4).
+        const originals = Object.getOwnPropertyDescriptors(globalThis);
+        let accesses = 0;
+        const onAccess = () => {
+          accesses += 1;
+          return undefined;
+        };
+        try {
+          Object.defineProperties(globalThis, {
+            navigator: { get: onAccess, configurable: true },
+            window: { get: onAccess, configurable: true },
+          });
+          vi.resetModules();
+          const capabilities = await import("@/lib/pwa/capabilities");
+          expect(accesses).toBe(0);
+          expect(capabilities).toMatchObject({
+            hasServiceWorker: expect.any(Function),
+            hasWakeLock: expect.any(Function),
+            hasVibration: expect.any(Function),
+          });
+        } finally {
+          Object.defineProperties(globalThis, {
+            navigator: originals.navigator!,
+            window: originals.window!,
+          });
+          vi.resetModules();
+        }
       });
-      vi.resetModules();
-      await import("@/lib/pwa/capabilities");
-      expect(true).toBe(true); // llegó hasta aquí sin lanzar
-    } finally {
-      if (original) {
-        Object.defineProperty(globalThis, "navigator", original);
-      }
-    }
-  });
 });
 
 describe("sin service worker, la app sigue funcional en línea (persistencia)", () => {
