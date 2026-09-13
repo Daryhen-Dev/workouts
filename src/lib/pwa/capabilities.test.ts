@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   hasBadging,
   hasMediaSession,
+  hasNotifications,
   hasServiceWorker,
   hasVibration,
   hasWakeLock,
@@ -218,6 +219,31 @@ describe("hasBadging — detección perezosa (SSR-segura, U13 B2)", () => {
     vi.stubGlobal("navigator", undefined);
     try {
       expect(hasBadging()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("hasNotifications — detección perezosa (SSR-segura, U13 D1)", () => {
+  it("false en jsdom: window.Notification no existe (navegador sin la API)", () => {
+    expect("Notification" in window).toBe(false);
+    expect(hasNotifications()).toBe(false);
+  });
+
+  it("true cuando el navegador expone Notification", () => {
+    vi.stubGlobal("Notification", class StubN {});
+    try {
+      expect(hasNotifications()).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("false sin window (SSR): se evalúa al llamar, sin lanzar", () => {
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(hasNotifications()).toBe(false);
     } finally {
       vi.unstubAllGlobals();
     }

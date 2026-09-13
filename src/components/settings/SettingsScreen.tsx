@@ -19,6 +19,7 @@ import {
   type TrackMeta,
 } from "@/lib/storage/musicStore";
 import { MusicLibrary } from "./MusicLibrary";
+import { NotificationsCard } from "./NotificationsCard";
 import { TrackAssigner } from "./TrackAssigner";
 
 /** Mapa código → texto español del spec (cuota / indescodificable / resto). */
@@ -93,6 +94,7 @@ export function SettingsScreen() {
         onRemove={(id) => void handleRemove(id)}
       />
       <TrackAssigner tracks={tracks ?? []} />
+      <NotificationsCard />
       <ToastStack toasts={toasts} />
     </div>
   );

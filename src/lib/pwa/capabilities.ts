@@ -62,3 +62,14 @@ export function hasBadging(): boolean {
 export function hasMediaSession(): boolean {
   return typeof navigator !== "undefined" && "mediaSession" in navigator;
 }
+
+/**
+ * true cuando el navegador expone la Notifications API ("Notification" in
+ * window, contrato del diseño §8.4). En SSR y sin soporte devuelve false sin
+ * lanzar. SOLO informativa — y a diferencia del resto del registro, la usa la
+ * tarjeta de ajustes D1 para deshabilitar su control con nota honesta; JAMÁS
+ * gatea la sesión (spec pwa: denegado/ausente no reduce funcionalidad).
+ */
+export function hasNotifications(): boolean {
+  return typeof window !== "undefined" && "Notification" in window;
+}

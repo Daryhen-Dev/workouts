@@ -20,6 +20,15 @@ import {
   useSettingsStore,
 } from "@/stores/settingsStore";
 
+const notificationMocks = vi.hoisted(() => ({
+  supported: true,
+  requestPermission: vi.fn(),
+}));
+vi.mock("@/lib/pwa/notifications", () => ({
+  canRequestNotificationPermission: () => notificationMocks.supported,
+  requestNotificationPermission: notificationMocks.requestPermission,
+}));
+
 // Instancia del store de música mockeada (el pipeline real vive en musicStore.test).
 const storeMocks = vi.hoisted(() => ({
   list: vi.fn(),
@@ -113,6 +122,8 @@ beforeEach(() => {
   playerMocks.pauseMusic.mockClear();
   playerMocks.resumeMusic.mockClear();
   playerMocks.stopMusic.mockClear();
+  notificationMocks.supported = true;
+  notificationMocks.requestPermission.mockReset().mockResolvedValue("default");
 });
 
 describe("/ajustes — shell y biblioteca", () => {
@@ -220,6 +231,79 @@ describe("/ajustes — fallos de importación visibles (spec audio)", () => {
     expect(playerMocks.pauseMusic).not.toHaveBeenCalled();
     expect(playerMocks.resumeMusic).not.toHaveBeenCalled();
     expect(playerMocks.stopMusic).not.toHaveBeenCalled();
+  });
+});
+
+describe("/ajustes — notificaciones (U13 D1a)", () => {
+  it("renderizar ajustes no solicita permiso", async () => {
+    render(<SettingsScreen />);
+
+    await screen.findAllByText("Suena.mp3");
+
+    expect(notificationMocks.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it("el gesto explícito para activar solicita una vez y persiste solo si se concede", async () => {
+    notificationMocks.requestPermission.mockResolvedValue("granted");
+    render(<SettingsScreen />);
+    await screen.findAllByText("Suena.mp3");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Notificaciones" }));
+
+    await waitFor(() =>
+      expect(useSettingsStore.getState().notificationsOptIn).toBe(true),
+    );
+    expect(notificationMocks.requestPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["default", "denied"] as const)(
+    "no activa el opt-in cuando el permiso queda %s",
+    async (permission) => {
+      notificationMocks.requestPermission.mockResolvedValue(permission);
+      render(<SettingsScreen />);
+      await screen.findAllByText("Suena.mp3");
+
+      fireEvent.click(screen.getByRole("checkbox", { name: "Notificaciones" }));
+
+      await waitFor(() =>
+        expect(notificationMocks.requestPermission).toHaveBeenCalledTimes(1),
+      );
+      expect(useSettingsStore.getState().notificationsOptIn).toBe(false);
+    },
+  );
+
+  it("mantiene el opt-in desactivado si solicitar permiso falla", async () => {
+    notificationMocks.requestPermission.mockRejectedValue(new Error("blocked"));
+    render(<SettingsScreen />);
+    await screen.findAllByText("Suena.mp3");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Notificaciones" }));
+
+    await waitFor(() =>
+      expect(notificationMocks.requestPermission).toHaveBeenCalledTimes(1),
+    );
+    expect(useSettingsStore.getState().notificationsOptIn).toBe(false);
+  });
+
+  it("desactivar no solicita permiso", async () => {
+    useSettingsStore.getState().setNotificationsOptIn(true);
+    render(<SettingsScreen />);
+    await screen.findAllByText("Suena.mp3");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Notificaciones" }));
+
+    expect(useSettingsStore.getState().notificationsOptIn).toBe(false);
+    expect(notificationMocks.requestPermission).not.toHaveBeenCalled();
+  });
+
+  it("sin soporte muestra una nota honesta y un control accesible deshabilitado", async () => {
+    notificationMocks.supported = false;
+    render(<SettingsScreen />);
+    await screen.findAllByText("Suena.mp3");
+
+    expect(screen.getByText("Las notificaciones no están disponibles en este navegador.")).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: "Notificaciones" })).toBeDisabled();
+    expect(notificationMocks.requestPermission).not.toHaveBeenCalled();
   });
 });
 
