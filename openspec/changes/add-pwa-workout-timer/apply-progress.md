@@ -1035,3 +1035,31 @@ Changed lines vs `origin/main`, counted as insertions + deletions including the 
 
 ### Boundary
 No completion observer, timer, visibility/session wiring, `new Notification(...)`, or installation behavior was added. D1b completion delivery remains unimplemented; D2 installation remains pending.
+
+---
+
+## U13 D1b — Completion notification delivery
+
+**Status: COMPLETE for D1b only.** Parent D remains open because D2 installation UX is pending; E remains unimplemented.
+
+### Scope delivered
+- `src/lib/pwa/notifications.ts`: `deliverCompletionNotification()` is an SSR-safe, no-throw adapter. It constructs only when a constructible Notification API has exactly `granted` permission and the readable document is not visible; absent APIs, DOM/permission getter faults, and constructor faults are silently ignored. It never calls `requestPermission()`.
+- `src/features/session/useSessionController.ts`: the established natural-completion callback retains its authoritative ordering—history entry, then `/resumen` navigation—and only then reads `useSettingsStore.getState().notificationsOptIn` and attempts best-effort delivery. No subscription or callback re-registration was added.
+- `src/features/sessionNotifications.test.tsx`: real `SessionController` integration coverage proves hidden opted-in completion yields one notification, one history entry, and one navigation across later refreshes; foreground, opt-out, denied, absent API, and throwing constructors preserve completion behavior.
+
+### TDD cycle evidence
+| Cycle | Evidence |
+| --- | --- |
+| RED | `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/notifications.test.ts src/features/sessionNotifications.test.tsx src/features/session/SessionController.test.tsx` → **2 files failed, 7 tests failed**: `deliverCompletionNotification is not a function` in five adapter cases; hidden natural completion constructed zero notifications; one test assertion was corrected because absent API has no request spy. |
+| GREEN | Same focused command after implementation → **3 files passed, 40 tests passed**. |
+| TRIANGULATE / REFACTOR | Exact-once survives later refreshes and visibility transitions; foreground and every delivery failure retain exactly one history entry plus `/resumen`. Platform branching remains entirely in `notifications.ts`; the session seam contains only the post-authoritative conditional invocation. |
+
+### Final validation
+- `pnpm --config.verify-deps-before-run=false exec vitest run src/lib/pwa/notifications.test.ts src/features/sessionNotifications.test.tsx src/features/session/SessionController.test.tsx` → **3 files passed, 40 tests passed**.
+- `pnpm --config.verify-deps-before-run=false exec eslint src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/features/session/useSessionController.ts src/features/sessionNotifications.test.tsx` → exit 0.
+- `pnpm --config.verify-deps-before-run=false exec tsc --noEmit` → exit 0.
+- `git diff --check HEAD -- src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/features/session/useSessionController.ts src/features/sessionNotifications.test.tsx openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → clean.
+- `git diff --stat HEAD -- src/lib/pwa/notifications.ts src/lib/pwa/notifications.test.ts src/features/session/useSessionController.ts src/features/sessionNotifications.test.tsx openspec/changes/add-pwa-workout-timer/tasks.md openspec/changes/add-pwa-workout-timer/apply-progress.md` → tracked candidate stat reported separately; Git excludes the untracked integration test.
+
+### Boundary
+Changed lines versus `HEAD`: **338** (163 tracked insertions + 1 tracked deletion from the required stat, plus 174 lines in new `src/features/sessionNotifications.test.tsx`), within the 400-line budget. Only notification delivery and its completion seam were changed. No permission gesture, settings store/card, manual-stop behavior, timer, visibility listener, installation UX, or E work was added. D2 and E remain unimplemented.

@@ -1,11 +1,35 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canRequestNotificationPermission,
+  deliverCompletionNotification,
   requestNotificationPermission,
 } from "./notifications";
 
+type NotificationPermission = "default" | "denied" | "granted";
+
+function installCompletionNotification(
+  permission: NotificationPermission = "granted",
+) {
+  const requestPermission = vi.fn().mockResolvedValue("granted");
+  const Notification = vi.fn();
+  Object.assign(Notification, { permission, requestPermission });
+  vi.stubGlobal("Notification", Notification);
+  return { Notification, requestPermission };
+}
+
+function setVisibility(state: "visible" | "hidden") {
+  Object.defineProperty(document, "visibilityState", {
+    value: state,
+    configurable: true,
+  });
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  Object.defineProperty(document, "visibilityState", {
+    value: "visible",
+    configurable: true,
+  });
 });
 
 function installNotification(
@@ -64,5 +88,80 @@ describe("notification permission adapter", () => {
       requestPermission: vi.fn(),
     });
     await expect(requestNotificationPermission()).resolves.toBe("default");
+  });
+
+  it("constructs exactly once for granted permission while the document is hidden", () => {
+    const { Notification, requestPermission } = installCompletionNotification();
+    setVisibility("hidden");
+
+    expect(() => deliverCompletionNotification()).not.toThrow();
+    expect(Notification).toHaveBeenCalledTimes(1);
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it("suppresses delivery while the document is visible", () => {
+    const { Notification, requestPermission } = installCompletionNotification();
+    setVisibility("visible");
+
+    deliverCompletionNotification();
+
+    expect(Notification).not.toHaveBeenCalled();
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it.each(["default", "denied"] as const)(
+    "suppresses delivery when permission is %s",
+    (permission) => {
+      const { Notification, requestPermission } = installCompletionNotification(
+        permission,
+      );
+      setVisibility("hidden");
+
+      deliverCompletionNotification();
+
+      expect(Notification).not.toHaveBeenCalled();
+      expect(requestPermission).not.toHaveBeenCalled();
+    },
+  );
+
+  it("silently ignores absent APIs, DOM access errors, and constructor errors", () => {
+    vi.stubGlobal("Notification", undefined);
+    setVisibility("hidden");
+    expect(() => deliverCompletionNotification()).not.toThrow();
+
+    const { Notification } = installCompletionNotification();
+    vi.stubGlobal("document", undefined);
+    expect(() => deliverCompletionNotification()).not.toThrow();
+    expect(Notification).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+    const throwingPermission = installCompletionNotification();
+    Object.defineProperty(throwingPermission.Notification, "permission", {
+      configurable: true,
+      get() {
+        throw new Error("blocked");
+      },
+    });
+    setVisibility("hidden");
+    expect(() => deliverCompletionNotification()).not.toThrow();
+    expect(throwingPermission.Notification).not.toHaveBeenCalled();
+
+    const throwingVisibility = installCompletionNotification();
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get() {
+        throw new Error("blocked");
+      },
+    });
+    expect(() => deliverCompletionNotification()).not.toThrow();
+    expect(throwingVisibility.Notification).not.toHaveBeenCalled();
+
+    const throwingConstructor = installCompletionNotification();
+    setVisibility("hidden");
+    throwingConstructor.Notification.mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    expect(() => deliverCompletionNotification()).not.toThrow();
+    expect(throwingConstructor.Notification).toHaveBeenCalledTimes(1);
   });
 });

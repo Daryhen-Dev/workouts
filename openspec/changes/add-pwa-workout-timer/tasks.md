@@ -217,7 +217,7 @@ GitHub issue and PR numbers share one sequence, so the actual PR numbers are rec
       - [x] C2: driver wiring — expose metadata only while phase music is actually active, map lock-screen play/pause/stop to timer actions (OS stop discards immediately per design §8.4), clear handlers at session end; beep-only sessions remain fully usable without OS controls. <!-- sdd-owner: implementation -->
     - [ ] D: install + notification UX, persisted guidance, and gesture-only permission proof. <!-- parent stays open until D1b and D2 -->
       - [x] D1a: notification-permission adapter + Settings opt-in control. Permission is requested only from the explicit checkbox gesture; persist `notificationsOptIn` only after `granted`. Adapter and unsupported/error paths are lazy, SSR-safe, and fail closed. D1b completion delivery and D2 installation UX remain pending/out of scope. <!-- sdd-owner: implementation -->
-      - [ ] D1b: completion-delivery policy and notification delivery proof — pending/out of scope for D1a. <!-- sdd-owner: implementation -->
+      - [x] D1b: completion-delivery policy and notification delivery proof — best-effort delivery is attempted only after the established natural-completion history and `/resumen` effects, reading the latest opt-in imperatively; hidden + granted constructs once, foreground/opt-out/default/denied/absent/error paths suppress silently, and it never requests permission. D2 remains pending/out of scope. <!-- sdd-owner: implementation -->
       - [ ] D2: installation UX and persisted guidance — pending/out of scope for D1a. <!-- sdd-owner: implementation -->
     - [ ] E: all-capabilities-unavailable smoke, Spanish copy audit, and cumulative closure evidence. <!-- sdd-owner: implementation -->
 
