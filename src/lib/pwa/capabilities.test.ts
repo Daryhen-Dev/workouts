@@ -12,6 +12,7 @@ import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   hasBadging,
+  hasMediaSession,
   hasServiceWorker,
   hasVibration,
   hasWakeLock,
@@ -217,6 +218,34 @@ describe("hasBadging — detección perezosa (SSR-segura, U13 B2)", () => {
     vi.stubGlobal("navigator", undefined);
     try {
       expect(hasBadging()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("hasMediaSession — detección perezosa (SSR-segura, U13 C2)", () => {
+  it("false en jsdom: navigator.mediaSession no existe (navegador sin la API)", () => {
+    expect("mediaSession" in navigator).toBe(false);
+    expect(hasMediaSession()).toBe(false);
+  });
+
+  it("true cuando el navegador expone mediaSession", () => {
+    Object.defineProperty(navigator, "mediaSession", {
+      value: { metadata: null, setActionHandler: () => {} },
+      configurable: true,
+    });
+    try {
+      expect(hasMediaSession()).toBe(true);
+    } finally {
+      delete (navigator as { mediaSession?: unknown }).mediaSession;
+    }
+  });
+
+  it("false sin navigator (SSR): se evalúa al llamar, sin lanzar", () => {
+    vi.stubGlobal("navigator", undefined);
+    try {
+      expect(hasMediaSession()).toBe(false);
     } finally {
       vi.unstubAllGlobals();
     }

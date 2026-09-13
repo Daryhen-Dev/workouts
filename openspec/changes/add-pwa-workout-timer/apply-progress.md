@@ -972,3 +972,37 @@ No capabilities registry entry (`hasMediaSession` deliberately NOT added — reg
 
 ### Workload
 Changed lines vs `origin/main` including untracked new files and both OpenSpec artifact updates: **390 of 400** — one cohesive C1 work unit within the evidence goal; no scope was trimmed to fit. PR boundary: C1 only, branch `feat/pwa-media-session-c`.
+
+---
+
+## U13 C2 — Media Session driver wiring (approved C1/C2 reslice)
+
+**Status: COMPLETE for the C2 slice.** Isolated worktree `pwa-media-session-c2` (branch `feat/pwa-media-session-c2`, stacked on C1 d144524). C1 adapter/fake/tests untouched; only the six authorized C2 paths changed.
+
+### Scope delivered
+- `src/lib/pwa/capabilities.ts`: `hasMediaSession()` — lazy SSR-safe (`"mediaSession" in navigator`), informational only (the C1 adapter's silent no-op stays the degradation boundary; the driver does not gate on it, matching the A2b/B1/B2 registry posture).
+- `src/features/session/useSessionController.ts`: `useMediaSessionDriver()` — status-keyed like `useBadgingDriver`: exposes metadata + exactly C1's play/pause/stop only while (running OR paused) AND the current phase kind has a non-null assignment (the documented bounded "music-active source" proxy — no `musicPlayer` introspection). Mapping per design §8.4: play→`resume()`, pause→`pause()` (handlers preserved while paused so lock-screen play resumes), stop→direct `stop()` (immediate discard, no dialog; the existing route guard navigates). Clears on completion, discard, unassigned-phase transition, and unmount; single `[musicActive]` effect key prevents tick/pause/resume/phase-transition churn (metadata is phase-independent). Beep-only sessions never register a real handler (null-clear no-ops only).
+- Metadata `{ title: "Tip Tap Workout — <mode label>", artist: "Entrenamiento" }` reads `BRAND`/`MODE_LABEL` from the copy module read-only; copy module untouched.
+- Tests: `src/lib/pwa/capabilities.test.ts` +3 `hasMediaSession()` (jsdom-false / exposed-true / SSR-undefined), `src/features/session/sessionMediaSession.test.tsx` (new, 10 integration tests on the real `SessionController` + `installMediaSessionFake()`).
+
+### TDD Cycle Evidence (strict RED→GREEN→TRIANGULATE→REFACTOR)
+
+| Cycle | RED evidence | GREEN evidence |
+| --- | --- | --- |
+| RED | `capabilities.test.ts` 3 failed (`TypeError: hasMediaSession is not a function`); `sessionMediaSession.test.tsx` 8 failed (metadata `[]`, handlers `undefined`); 2 degradation tests green as absence guards | — |
+| GREEN | — | `hasMediaSession()` + `useMediaSessionDriver` → focused suites 28/28 (10 integration + 18 capabilities); one test-honesty fix: beep-only assertion narrowed to "no non-null registrations" (null-clears are recorded no-ops on the fake) |
+| TRIANGULATE | Mutation 1: effect keyed `[musicActive, status]` → churn test failed (1 failed); Mutation 2: dropped `assigned !== null` gate → exactly the 2 assignment-gating tests failed; both reverted | Full matrix: registration+metadata / OS pause-play / ticker no-churn / OS stop direct discard / completion clear / unmount clear / unassigned-phase clear / assigned-phase transition no-churn / beep-only zero controls / unsupported-API completes |
+| REFACTOR | — | Driver mirrors `useBadgingDriver`'s status-family shape; platform fallback only in the C1 adapter; focused suites re-run green |
+
+### Verification (isolated worktree; `node_modules` symlinked for execution only, removed after)
+- Baseline before edits: `pnpm test` → 47 files / 482 tests passed (C1 final state).
+- Focused: `vitest run sessionMediaSession.test.tsx capabilities.test.ts` → 2 files / 28 tests.
+- `pnpm test` → **48 files / 495 tests passed** (+13 vs baseline: 10 integration + 3 registry).
+- `pnpm lint` → 0 errors (pre-existing `persisted.test.ts:161` `_set` warning only).
+- `pnpm exec tsc --noEmit` → exit 0. `git diff --check` → clean.
+
+### Scope boundary / non-goals
+No C1 adapter/fake/test edits, no `fakes.ts`/musicPlayer/audio changes, no stores/timer/UI/copy/settings/install/notifications/badging/vibration/Wake Lock edits, no browser listeners, retries, or race machinery. `hasMediaSession()` gates nothing. Beep-only degradation core guarantee preserved.
+
+### Workload
+Changed lines vs `origin/main`, counted as insertions + deletions including the new untracked test file and both OpenSpec artifact updates: **396 of 400** (tracked: 127 insertions + 1 deletion across capabilities.ts +10, capabilities.test.ts +29, useSessionController.ts +53, tasks.md 1/1, apply-progress.md +34; untracked: sessionMediaSession.test.tsx 268) — one cohesive C2 work unit within the budget; no scope trimmed to fit. PR boundary: C2 only, branch `feat/pwa-media-session-c2`.
