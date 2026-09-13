@@ -443,14 +443,14 @@ serwist.addEventListeners();
 New file `tests/offline.spec.ts` (Playwright, chromium-only, dev-only dependency; jsdom cannot host service workers or CacheStorage at all). Runs via **`pnpm test:offline`** (separate from the TDD `pnpm test` loop), against a production build (`playwright.config.webServer` runs `pnpm build && pnpm start`):
 
 1. **Warm**: load `/` and every route (`/clasico`, `/tabata`, `/personalizado`, `/rutinas`, `/historial`, `/ajustes`) online; assert `navigator.serviceWorker.ready` resolves and each page renders its Spanish heading.
-2. **Cut the network**: `context.setOffline(true)`.
-3. **Hard navigation offline**: reload `/` → app loads (document from SW cache). URL-navigate to each route → loads.
-4. **Client-side navigation offline**: click through home → mode config → start.
-5. **Full offline session**: configure Clásico `preparación 1 s, trabajo 2 s, descanso 1 s, 1 ronda`; start; let it complete (~3 s real time); assert `/resumen` shows mode + rondas + duration and the history list contains exactly one entry.
+2. **Prepare canonical scenario**: use Settings to import a valid in-memory WAV, assign it globally to `trabajo`, create/save a short Personalizado routine through its UI, and warm its exact `/rutinas` → `/sesion` → `/resumen` client journey.
+3. **Cut the network**: `context.setOffline(true)`.
+4. **Hard navigation offline**: reload `/` → app loads (document from SW cache). URL-navigate to each route → loads.
+5. **Full offline session**: start the saved Personalizado routine from `/rutinas`; let it complete (~3 s real time); assert `/resumen` shows mode + bloques + duration, history contains exactly one matching entry, and telemetry wrapping the native `HTMLMediaElement.play()` observes its actual promise resolve.
 6. **Assets offline**: fetch `/manifest.webmanifest` and both icons → 200 from cache.
 7. **No leaked network failures**: no unhandled request failures beyond expected none.
 
-Pass ⇒ offline-first claims in the pwa spec are verified; failure ⇒ add the explicit runtime rule (§8.2) and re-run. Verify phase executes this and records output.
+Canonical evidence remains **40 requirements / 79 scenarios**; “Natural Completion Summary” is a requirement heading, not an 80th scenario. Pass ⇒ offline-first claims in the pwa spec are verified; failure ⇒ add the explicit runtime rule (§8.2) and re-run. Verify phase executes this and records output.
 
 ### 8.4 Capability integrations — degradation matrix as code
 

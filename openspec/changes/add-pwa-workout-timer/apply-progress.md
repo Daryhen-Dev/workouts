@@ -1228,3 +1228,11 @@ Candidate size: **311 changed lines**. All edits are tests or OpenSpec evidence;
 Native review lineage `review-f826e64545ae6bbe` selected `review-reliability`, but its provider capture binding was rejected twice before reviewer execution. The user authorized formal `operator_disposition` abandonment; the native abandonment record contains zero captured results, zero findings, and no receipt. No native approval is claimed. No commit, push, PR, or merge was performed.
 
 Runtime candidate scope: `RoutineNameDialog.tsx`, `PersonalizadoBuilder.test.tsx`, and this cumulative OpenSpec evidence record. It remains separate from the 397-line evidence candidate because combining them would exceed the 400-line review budget.
+
+---
+
+## Final evidence remediation — canonical offline PWA journey
+
+**Status: rebased browser evidence passed; no native-review or delivery claim.** The prior U12 Classic-only smoke language is reconciled as historical evidence, not a spec change. After the independently delivered Personalizado form correction merged in PR #47 (`1dcd46c`), the revised smoke passed on merged main through the canonical saved Personalizado journey: worker-controlled online warm-up; a valid in-memory WAV imported through Settings and globally assigned to `trabajo`; UI save of a short Personalizado routine; offline reload, `/rutinas` start, completion summary, exactly one matching history entry, and a telemetry-only wrapper proving the real native `HTMLMediaElement.play()` promise resolves. The wrapper calls through and never replaces production playback.
+
+Rebased validation on merged main: `pnpm test:offline` passed **1 Chromium test** after the UI save, offline start, completion, playback telemetry, summary, and history assertions. The canonical total remains **40 requirements / 79 scenarios**. **Natural Completion Summary** remains a requirement heading, not an 80th scenario. The revised smoke retains manifest/icons, uncached-route fallback, route coverage, and unhandled-network checks. This evidence candidate makes no native-review, commit, push, PR, merge, or archive approval claim; final SDD reporting and any delivery stay separate.
