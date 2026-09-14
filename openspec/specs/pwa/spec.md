@@ -46,7 +46,7 @@ Where the platform fires `beforeinstallprompt` (Chromium-family browsers), the a
 
 The manifest SHOULD declare launcher shortcuts that start timer modes where the platform supports them. Platforms without shortcut support MUST experience no error and no missing functionality.
 
-#### Scenario: Shortcuts where supported, absent harmlessly elsewhere
+#### Acceptance note: Shortcuts where supported, absent harmlessly elsewhere
 
 - GIVEN the manifest declares mode shortcuts
 - WHEN the app is installed on a platform with shortcut support

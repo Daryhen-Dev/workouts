@@ -450,7 +450,7 @@ New file `tests/offline.spec.ts` (Playwright, chromium-only, dev-only dependency
 6. **Assets offline**: fetch `/manifest.webmanifest` and both icons → 200 from cache.
 7. **No leaked network failures**: no unhandled request failures beyond expected none.
 
-Canonical evidence remains **40 requirements / 79 scenarios**; “Natural Completion Summary” is a requirement heading, not an 80th scenario. Pass ⇒ offline-first claims in the pwa spec are verified; failure ⇒ add the explicit runtime rule (§8.2) and re-run. Verify phase executes this and records output.
+Canonical evidence remains **40 requirements / 79 scenarios**; Launcher Shortcuts is documented as an acceptance note, not a structural scenario. “Natural Completion Summary” remains a requirement heading. Pass ⇒ offline-first claims in the pwa spec are verified; failure ⇒ add the explicit runtime rule (§8.2) and re-run. Verify phase executes this and records output.
 
 ### 8.4 Capability integrations — degradation matrix as code
 
