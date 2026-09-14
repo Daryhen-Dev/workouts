@@ -122,6 +122,21 @@ describe("useWakeLockDriver — ciclo de vida de la sesión (A2b)", () => {
     expect(requests[1].sentinel.releaseCalls).toBe(0); // nuevo lock retenido
   });
 
+  it("los ticks cosméticos no vuelven a pedir ni liberar el lock", async () => {
+    const clock = createFakeClock(0);
+    const requests = await mountHolding(clock);
+
+    act(() => {
+      for (let index = 0; index < 5; index += 1) {
+        clock.advance(250);
+        useSessionStore.getState().refreshView();
+      }
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].sentinel.releaseCalls).toBe(0);
+  });
+
   it("completada: suelta el lock retenido", async () => {
     const clock = createFakeClock(0);
     const requests = await mountHolding(clock);
