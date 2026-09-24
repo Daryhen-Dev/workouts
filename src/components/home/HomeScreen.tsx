@@ -20,6 +20,29 @@ const MODE_ICONS = {
     personalizado: Layers,
 } as const;
 
+/* Identidad cromática por modo (§9.1 acentos secundarios documentados):
+   teal=Clásico, peach=Tabata, mauve=Personalizado. Borde tenue de reposo
+   (30%) con acento pleno en hover/focus; chip del ícono con tinte al 10%;
+   el nombre del modo lleva el acento pleno para que la identidad no quede
+   solo en el ícono. */
+const MODE_STYLES = {
+    clasico: {
+        card: "border-teal/30 hover:border-teal focus-visible:ring-teal",
+        chip: "bg-teal/10 text-teal",
+        titulo: "text-teal",
+    },
+    tabata: {
+        card: "border-peach/30 hover:border-peach focus-visible:ring-peach",
+        chip: "bg-peach/10 text-peach",
+        titulo: "text-peach",
+    },
+    personalizado: {
+        card: "border-mauve/30 hover:border-mauve focus-visible:ring-mauve",
+        chip: "bg-mauve/10 text-mauve",
+        titulo: "text-mauve",
+    },
+} as const;
+
 interface ModeCard {
     mode: ModeId;
     href: string;
@@ -46,26 +69,33 @@ export function HomeScreen() {
             <h2 className="text-sm font-medium text-subtext1">
                 {HOME_COPY.subtitulo}
             </h2>
-            {/* Tratamiento de tarjeta §9.1: surface-dim + borde surface-1, hover
-              acento + translateY(-2px). */}
-            <div className="mt-3 grid gap-3">
+            {/* Tratamiento de tarjeta §9.1: surface-dim + borde tenue por modo,
+              hover acento pleno + translateY(-2px). Descripciones en subtext1
+              por contraste (subtext0 quedaba ~3:1 contra surface-dim). */}
+            {/* Dos columnas desde sm: las descripciones de modos no caben con claridad en tres. */}
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2">
                 {MODE_CARDS.map(({ mode, href }) => {
                     const Icon = MODE_ICONS[mode];
+                    const styles = MODE_STYLES[mode];
                     return (
                         <button
                             key={mode}
                             type="button"
                             onClick={() => router.push(href)}
-                            className="flex items-center gap-4 rounded-lg border border-surface-1 bg-surface-dim p-4 text-left transition-all duration-150 hover:-translate-y-0.5 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            className={`flex items-center gap-4 rounded-lg border bg-surface-dim p-4 text-left transition-all duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 ${styles.card}`}
                         >
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-surface-1 text-accent">
+                            <span
+                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${styles.chip}`}
+                            >
                                 <Icon aria-hidden="true" className="h-5 w-5" />
                             </span>
                             <span>
-                                <span className="block text-base font-semibold">
+                                <span
+                                    className={`block text-base font-semibold ${styles.titulo}`}
+                                >
                                     {MODE_LABEL[mode]}
                                 </span>
-                                <span className="mt-0.5 block text-sm text-subtext0">
+                                <span className="mt-0.5 block text-sm text-subtext1">
                                     {HOME_COPY.modos[mode]}
                                 </span>
                             </span>
@@ -82,7 +112,7 @@ export function HomeScreen() {
                     >
                         {HOME_COPY.rutinasTitulo}
                     </h2>
-                    <div className="mt-3 grid gap-2">
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
                         {routines.map((routine) => (
                             <button
                                 key={routine.id}
